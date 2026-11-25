@@ -17,7 +17,7 @@ export default function Layout() {
     { to: '/', ico: '📊', txt: 'Painel', end: true },
     { to: '/lancamentos', ico: '🧾', txt: 'Lançamentos' },
     { to: '/fluxo', ico: '📅', txt: 'Fluxo de Caixa' },
-    { to: '/relatorios', ico: '📄', txt: 'Relatórios (PDF)' },
+    { to: '/relatorios', ico: '📄', txt: 'Relatórios' },
   ]
   const admin = [
     { to: '/categorias', ico: '🏷️', txt: 'Categorias e formas' },

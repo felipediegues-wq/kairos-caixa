@@ -99,3 +99,25 @@ export function somaPor(lancs, chave, filtro = () => true) {
 
 // Só saídas e retiradas
 export const gastosPor = (lancs, chave) => somaPor(lancs, chave, (l) => l.tipo !== 'Entrada')
+
+// Tudo o que o relatório de um período precisa (usado na tela e no PDF)
+export function dadosPeriodo(lancamentos, saldoInicial, de, ate) {
+  const doPeriodo = ordenar(lancamentos.filter((l) => l.data >= de && l.data <= ate))
+  const t = totais(doPeriodo)
+  const saldoNoInicio = saldoAntes(lancamentos, saldoInicial, de)
+  const iniMes = de.slice(0, 7) + '-01'
+  const qtdMeses = Math.max(1, Math.min(24,
+    (Number(ate.slice(0, 4)) - Number(de.slice(0, 4))) * 12 + Number(ate.slice(5, 7)) - Number(de.slice(5, 7)) + 1))
+  return {
+    doPeriodo,
+    t,
+    saldoNoInicio,
+    saldoNoFim: saldoNoInicio + t.resultado,
+    iniMes,
+    qtdMeses,
+    mensal: resumoMensal(lancamentos, saldoInicial, iniMes, qtdMeses),
+    lista: comSaldo(lancamentos, saldoInicial).filter((l) => l.data >= de && l.data <= ate),
+    entradasPorCategoria: somaPor(doPeriodo, (l) => l.categoria?.nome, (l) => l.tipo === 'Entrada'),
+    gastosPorCategoria: gastosPor(doPeriodo, (l) => l.categoria?.nome),
+  }
+}

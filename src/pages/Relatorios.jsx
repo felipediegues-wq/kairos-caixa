@@ -1,8 +1,11 @@
-import { useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
 import { useDados } from '../context/DadosContext'
 import { useAuth } from '../context/AuthContext'
-import { Alerta, Carregando } from '../components/ui'
-import { hojeISO, inicioMesISO, fimMesISO, somarMeses, dataBR } from '../lib/format'
+import { Alerta, Carregando, Kpi, CORES } from '../components/ui'
+import { TabelaFluxo } from './Fluxo'
+import { hojeISO, inicioMesISO, fimMesISO, somarMeses, dataBR, brl, num, pct, compacto, rotuloMes, rotuloMesLongo } from '../lib/format'
+import { dadosPeriodo, matrizFluxo, resumoMensal } from '../lib/relatorios'
 
 const ATALHOS = [
   ['Este mês', () => [inicioMesISO(), fimMesISO()]],
@@ -18,8 +21,8 @@ const SECOES = [
   ['mensal', 'Resumo mês a mês'],
   ['categorias', 'Entradas e gastos por categoria'],
   ['lancamentos', 'Lista de lançamentos com saldo'],
-  ['assinaturas', 'Linhas de assinatura (tesoureiro e coordenador)'],
-  ['fluxo', 'Fluxo de caixa por categoria (página em paisagem)'],
+  ['assinaturas', 'Linhas de assinatura (só no PDF)'],
+  ['fluxo', 'Fluxo de caixa por categoria'],
 ]
 
 // Medalhão do grupo em base64, para o cabeçalho do PDF
@@ -46,11 +49,32 @@ export default function Relatorios() {
   const [secoes, setSecoes] = useState(Object.fromEntries(SECOES.map(([k]) => [k, true])))
   const [erro, setErro] = useState('')
   const [gerando, setGerando] = useState(false)
+  const [visualizar, setVisualizar] = useState(false)
+  const refPrevia = useRef(null)
+
+  const periodoOk = Boolean(de && ate && ate >= de)
+
+  function validar() {
+    setErro('')
+    if (!periodoOk) {
+      setErro('Período inválido: a data final precisa ser igual ou depois da inicial.')
+      return false
+    }
+    if (!Object.values(secoes).some(Boolean)) {
+      setErro('Marque pelo menos uma seção.')
+      return false
+    }
+    return true
+  }
+
+  function mostrar() {
+    if (!validar()) return
+    setVisualizar(true)
+    setTimeout(() => refPrevia.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
+  }
 
   async function gerar() {
-    setErro('')
-    if (!de || !ate || ate < de) return setErro('Período inválido.')
-    if (!Object.values(secoes).some(Boolean)) return setErro('Marque pelo menos uma seção.')
+    if (!validar()) return
     setGerando(true)
     try {
       const { gerarPDF } = await import('../lib/pdf') // carrega o gerador só quando precisa
@@ -71,8 +95,8 @@ export default function Relatorios() {
     <>
       <div className="cabecalho">
         <div>
-          <h1>Relatórios em PDF</h1>
-          <p className="muted">Prestação de contas pronta para imprimir ou enviar ao grupo</p>
+          <h1>Relatórios</h1>
+          <p className="muted">Confira os dados na tela e depois gere o PDF para a prestação de contas</p>
         </div>
       </div>
       <Alerta tipo="erro">{erro}</Alerta>
@@ -104,11 +128,200 @@ export default function Relatorios() {
           </div>
         </div>
       </div>
-      <div style={{ marginTop: 16 }}>
+      <div className="acoes" style={{ marginTop: 16 }}>
+        <button className="btn-primario" onClick={mostrar} style={{ padding: '11px 22px' }}>
+          👁 {visualizar ? 'Ir para a visualização' : 'Visualizar na tela'}
+        </button>
         <button className="btn-perigo" onClick={gerar} disabled={gerando} style={{ padding: '11px 22px' }}>
           {gerando ? 'Gerando…' : '📄 Gerar PDF'}
         </button>
       </div>
+
+      {visualizar && periodoOk && (
+        <div ref={refPrevia} style={{ scrollMarginTop: 16, marginTop: 24 }}>
+          <Previa config={config} lancamentos={lancamentos} categorias={categorias} de={de} ate={ate} secoes={secoes}
+            gerando={gerando} aoGerar={gerar} aoFechar={() => setVisualizar(false)} />
+        </div>
+      )}
     </>
+  )
+}
+
+function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoGerar, aoFechar }) {
+  const saldoIni = Number(config?.saldo_inicial || 0)
+  const P = useMemo(() => dadosPeriodo(lancamentos, saldoIni, de, ate), [lancamentos, saldoIni, de, ate])
+  const fluxo = useMemo(() => {
+    if (!secoes.fluxo) return null
+    const qtd = Math.min(12, P.qtdMeses)
+    return { ...matrizFluxo(lancamentos, categorias, P.iniMes, qtd), resumo: resumoMensal(lancamentos, saldoIni, P.iniMes, qtd) }
+  }, [secoes.fluxo, lancamentos, categorias, P, saldoIni])
+  const { t, mensal } = P
+
+  return (
+    <div className="previa">
+      <div className="previa-topo">
+        <div>
+          <h2>{config?.nome_grupo} · Relatório de caixa</h2>
+          <div className="muted small">Período: {dataBR(de)} a {dataBR(ate)} · {t.qtd} lançamento(s) · atualiza sozinho ao mudar as opções acima</div>
+        </div>
+        <div className="acoes">
+          <button className="btn-perigo" onClick={aoGerar} disabled={gerando}>{gerando ? 'Gerando…' : '📄 Gerar PDF deste relatório'}</button>
+          <button onClick={aoFechar}>Fechar</button>
+        </div>
+      </div>
+
+      {secoes.resumo && (
+        <section className="card">
+          <h2>Resumo do período</h2>
+          <div className="grade grade-kpi">
+            <Kpi rotulo="Saldo no início" valor={brl(P.saldoNoInicio)} cor={CORES.azul} />
+            <Kpi rotulo="Entradas" valor={brl(t.entradas)} cor={CORES.verde} />
+            <Kpi rotulo="Saídas" valor={brl(t.saidas)} cor={CORES.vermelho} />
+            <Kpi rotulo="Retiradas" valor={brl(t.retiradas)} cor={CORES.roxo} />
+            <Kpi rotulo="Resultado" valor={brl(t.resultado)} cor={t.resultado < 0 ? CORES.vermelho : CORES.azul} />
+            <Kpi rotulo="Saldo no fim" valor={brl(P.saldoNoFim)} cor={CORES.azul} />
+          </div>
+        </section>
+      )}
+
+      {secoes.grafico && (
+        <section className="card">
+          <h2>Entradas x saídas x retiradas por mês</h2>
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={mensal.map((m) => ({ mes: rotuloMes(m.mes), Entradas: m.entradas, Saídas: m.saidas, Retiradas: m.retiradas }))}
+              margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8ecf2" />
+              <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+              <YAxis tickFormatter={compacto} tick={{ fontSize: 12 }} width={84} />
+              <Tooltip formatter={(v) => brl(v)} />
+              <Legend />
+              <Bar dataKey="Entradas" fill={CORES.verde} radius={[4, 4, 0, 0]} maxBarSize={36} />
+              <Bar dataKey="Saídas" fill={CORES.vermelho} radius={[4, 4, 0, 0]} maxBarSize={36} />
+              <Bar dataKey="Retiradas" fill={CORES.roxo} radius={[4, 4, 0, 0]} maxBarSize={36} />
+            </BarChart>
+          </ResponsiveContainer>
+        </section>
+      )}
+
+      {secoes.mensal && (
+        <section className="card">
+          <h2>Resumo mês a mês</h2>
+          <div className="tabela-wrap">
+            <table className="tabela">
+              <thead>
+                <tr><th>Mês</th><th className="right">Saldo inicial</th><th className="right">Entradas</th><th className="right">Saídas</th>
+                  <th className="right">Retiradas</th><th className="right">Resultado</th><th className="right">Saldo final</th></tr>
+              </thead>
+              <tbody>
+                {mensal.map((m) => (
+                  <tr key={m.mes}>
+                    <td>{rotuloMesLongo(m.mes)}</td>
+                    <td className="right nowrap">{num(m.saldoInicial)}</td>
+                    <td className="right nowrap pos">{num(m.entradas)}</td>
+                    <td className="right nowrap neg">{num(m.saidas)}</td>
+                    <td className="right nowrap">{num(m.retiradas)}</td>
+                    <td className={`right nowrap ${m.resultado < 0 ? 'neg' : ''}`}>{num(m.resultado)}</td>
+                    <td className="right nowrap"><b>{num(m.saldoFinal)}</b></td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Total</td><td></td>
+                  <td className="right nowrap">{num(mensal.reduce((a, m) => a + m.entradas, 0))}</td>
+                  <td className="right nowrap">{num(mensal.reduce((a, m) => a + m.saidas, 0))}</td>
+                  <td className="right nowrap">{num(mensal.reduce((a, m) => a + m.retiradas, 0))}</td>
+                  <td className="right nowrap">{num(mensal.reduce((a, m) => a + m.resultado, 0))}</td>
+                  <td className="right nowrap">{num(mensal.at(-1).saldoFinal)}</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <p className="muted small" style={{ marginBottom: 0 }}>Cada linha considera o mês inteiro.</p>
+        </section>
+      )}
+
+      {secoes.categorias && (
+        <section className="card">
+          <h2>Entradas e gastos por categoria</h2>
+          <div className="grade grade-2">
+            <TabelaCategorias titulo="Entradas" itens={P.entradasPorCategoria} cor={CORES.verde} />
+            <TabelaCategorias titulo="Saídas e retiradas" itens={P.gastosPorCategoria} cor={CORES.vermelho} />
+          </div>
+        </section>
+      )}
+
+      {secoes.lancamentos && (
+        <section className="card">
+          <h2>Lançamentos do período</h2>
+          <div className="tabela-wrap">
+            <table className="tabela">
+              <thead>
+                <tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Forma</th><th className="right">Valor</th><th className="right">Saldo</th></tr>
+              </thead>
+              <tbody>
+                {P.lista.length === 0 && <tr><td colSpan={7} className="vazio">Sem lançamentos no período.</td></tr>}
+                {P.lista.map((l) => (
+                  <tr key={l.id}>
+                    <td className="nowrap">{dataBR(l.data)}</td>
+                    <td><span className={`tag ${l.tipo}`}>{l.tipo}</span></td>
+                    <td>{l.categoria?.nome}</td>
+                    <td>{l.descricao}</td>
+                    <td>{l.forma?.nome}</td>
+                    <td className={`right nowrap ${l.tipo === 'Entrada' ? 'pos' : 'neg'}`}>{l.tipo === 'Entrada' ? '' : '−'}{brl(l.valor)}</td>
+                    <td className="right nowrap"><b>{brl(l.saldo)}</b></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {secoes.fluxo && fluxo && (
+        <section className="card">
+          <h2>Fluxo de caixa por categoria ({rotuloMes(fluxo.meses[0])} a {rotuloMes(fluxo.meses.at(-1))})</h2>
+          <TabelaFluxo fluxo={fluxo} />
+        </section>
+      )}
+
+      {secoes.assinaturas && (
+        <p className="muted small center">As linhas de assinatura (tesoureiro e coordenador) aparecem no PDF.</p>
+      )}
+
+      <div className="acoes" style={{ justifyContent: 'center', marginTop: 12 }}>
+        <button className="btn-perigo" onClick={aoGerar} disabled={gerando} style={{ padding: '11px 22px' }}>
+          {gerando ? 'Gerando…' : '📄 Gerar PDF deste relatório'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function TabelaCategorias({ titulo, itens, cor }) {
+  const total = itens.reduce((a, i) => a + i.valor, 0)
+  return (
+    <div>
+      <h3 style={{ color: cor, marginBottom: 8 }}>{titulo}</h3>
+      <div className="tabela-wrap">
+        <table className="tabela">
+          <thead><tr><th>Categoria</th><th className="right">Total</th><th className="right">%</th><th style={{ width: '26%' }}></th></tr></thead>
+          <tbody>
+            {itens.length === 0 && <tr><td colSpan={4} className="vazio">Nada no período.</td></tr>}
+            {itens.map((i) => (
+              <tr key={i.nome}>
+                <td>{i.nome}</td>
+                <td className="right nowrap">{brl(i.valor)}</td>
+                <td className="right nowrap">{pct(i.pct)}</td>
+                <td><div className="barra"><div style={{ width: `${i.pct * 100}%`, background: cor }} /></div></td>
+              </tr>
+            ))}
+          </tbody>
+          {itens.length > 0 && (
+            <tfoot><tr><td>Total</td><td className="right nowrap">{brl(total)}</td><td className="right">100%</td><td></td></tr></tfoot>
+          )}
+        </table>
+      </div>
+    </div>
   )
 }

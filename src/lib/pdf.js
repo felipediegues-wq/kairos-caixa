@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { brl, num, pct, dataBR, rotuloMes, rotuloMesLongo, chaveMes, somarMeses, inicioMesISO } from './format'
-import { totais, comSaldo, resumoMensal, matrizFluxo, gastosPor, somaPor } from './relatorios'
+import { resumoMensal, matrizFluxo, dadosPeriodo } from './relatorios'
 
 const AZUL = [29, 29, 31] // preto do medalhão
 const OURO = [212, 160, 23]
@@ -21,10 +21,10 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
   const periodoTxt = `${dataBR(de)} a ${dataBR(ate)}`
   const saldoIni = Number(config?.saldo_inicial || 0)
 
-  const doPeriodo = lancamentos.filter((l) => l.data >= de && l.data <= ate)
-  const t = totais(doPeriodo)
-  const saldoAntes = comSaldo(lancamentos.filter((l) => l.data < de), saldoIni).at(-1)?.saldo ?? saldoIni
-  const saldoFim = saldoAntes + t.resultado
+  const P = dadosPeriodo(lancamentos, saldoIni, de, ate)
+  const { t, mensal, iniMes, qtdMeses } = P
+  const saldoAntes = P.saldoNoInicio
+  const saldoFim = P.saldoNoFim
 
   // ---- cabeçalho e rodapé em todas as páginas ----
   const cabecalho = () => {
@@ -118,11 +118,6 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
     y += 8
   }
 
-  // meses cobertos pelo período (até 12 para a tabela de fluxo)
-  const iniMes = inicioMesISO(de)
-  const qtdMeses = Math.max(1, Math.min(24, (Number(ate.slice(0, 4)) - Number(de.slice(0, 4))) * 12 + Number(ate.slice(5, 7)) - Number(de.slice(5, 7)) + 1))
-  const mensal = resumoMensal(lancamentos, saldoIni, iniMes, qtdMeses)
-
   // ---- 2. gráfico mensal ----
   if (secoes.grafico && mensal.length) {
     y = garantirEspaco(y, 75)
@@ -153,8 +148,8 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
 
   // ---- 4. gastos por categoria ----
   if (secoes.categorias) {
-    const cats = gastosPor(doPeriodo, (l) => l.categoria?.nome)
-    const ents = somaPor(doPeriodo, (l) => l.categoria?.nome, (l) => l.tipo === 'Entrada')
+    const cats = P.gastosPorCategoria
+    const ents = P.entradasPorCategoria
     y = garantirEspaco(y, 40)
     y = titulo('Entradas e gastos por categoria', y)
     const linhas = [
@@ -177,7 +172,7 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
 
   // ---- 5. lançamentos ----
   if (secoes.lancamentos) {
-    const lista = comSaldo(lancamentos, saldoIni).filter((l) => l.data >= de && l.data <= ate)
+    const lista = P.lista
     y = garantirEspaco(y, 40)
     y = titulo('Lançamentos do período', y)
     autoTable(doc, {

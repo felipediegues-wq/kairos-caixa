@@ -196,3 +196,11 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .barra > div { height: 100%; background: var(--azul-2); border-radius: 99px; }
 .check { display: flex; gap: 8px; align-items: center; font-size: 0.92rem; font-weight: 500; color: var(--texto); }
 .check input { width: 17px; height: 17px; }
+
+/* visualização do relatório */
+.previa { border: 2px solid var(--ouro); border-radius: 14px; padding: 16px; background: #fffdf5; }
+.previa .card { box-shadow: none; }
+.previa-topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--preto); color: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; border-bottom: 3px solid var(--ouro); }
+.previa-topo h2 { color: var(--ouro); }
+.previa-topo .muted { color: #c9c9cf; }
