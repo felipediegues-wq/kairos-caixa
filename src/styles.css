@@ -28,6 +28,7 @@
   font-size: 15px;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; }
 a { color: var(--azul-2); }
 h1, h2, h3 { margin: 0; line-height: 1.25; }
