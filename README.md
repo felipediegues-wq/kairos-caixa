@@ -52,6 +52,8 @@ Em **Authentication → URL Configuration**:
 
 Em **Authentication → Sign In / Providers → Email**: deixe **Enable Email** ligado. “Confirm email” ligado é o recomendado.
 
+> **Cadastro desativado no projeto?** Se aparecer “A criação de contas pelo site está desativada”, é porque em **Authentication → Sign In / Providers** a opção *Allow new users to sign up* está desligada. Nesse caso o admin cria cada conta em **Authentication → Users → Add user → Create new user** (marque *Auto Confirm User*); a pessoa entra no Kairós e o admin libera em **Usuários e acessos**.
+>
 > **Projeto compartilhado:** as contas de login são as mesmas dos dois sistemas. Quem já tem conta no outro sistema entra no Kairós com o mesmo e-mail e senha, mas **só vê o caixa depois que um administrador do Kairós liberar**. E quem criar conta pelo Kairós passa a existir também no cadastro de login do outro sistema (o acesso a cada um continua separado). Os e-mails de confirmação/recuperação usam os modelos já configurados no projeto.
 >
 > O Supabase gratuito envia poucos e-mails por hora; se precisar de mais, configure SMTP próprio em **Authentication → Emails → SMTP Settings**.
