@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { supabase, mensagemErro, urlDoSite } from '../lib/supabase'
 import { Alerta } from '../components/ui'
+import Medalhao3D from '../components/Medalhao3D'
 
-const base = import.meta.env.BASE_URL
 
 export default function Login() {
   const [modo, setModo] = useState('entrar') // entrar | criar | esqueci
@@ -57,12 +57,10 @@ export default function Login() {
   return (
     <div className="tela-login">
       <div className="caixa-login">
-        <div className="logo">
-          <img src={`${base}favicon.svg`} alt="" />
-          <div>
-            <h1>Kairós Caixa</h1>
-            <div className="muted small">Controle de gastos e fluxo de caixa</div>
-          </div>
+        <div className="login-topo">
+          <Medalhao3D tamanho={150} />
+          <h1>Kairós Caixa</h1>
+          <div className="muted small">Controle de gastos e fluxo de caixa</div>
         </div>
         <h2 style={{ marginBottom: 12 }}>{titulos[modo]}</h2>
         <Alerta tipo="erro">{erro}</Alerta>

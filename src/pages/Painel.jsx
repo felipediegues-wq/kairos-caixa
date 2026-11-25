@@ -112,7 +112,7 @@ export default function Painel() {
               <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
               <YAxis tickFormatter={compacto} tick={{ fontSize: 12 }} width={84} />
               <Tooltip formatter={dica} />
-              <Line type="linear" dataKey="Saldo" stroke={CORES.azul} strokeWidth={3} dot={{ r: 4 }} />
+              <Line type="linear" dataKey="Saldo" stroke={CORES.ouro} strokeWidth={3} dot={{ r: 4, fill: CORES.ouro }} />
             </LineChart>
           </ResponsiveContainer>
         </div>

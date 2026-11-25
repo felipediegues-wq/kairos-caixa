@@ -10,7 +10,7 @@ function Caixa({ titulo, children }) {
     <div className="tela-login">
       <div className="caixa-login">
         <div className="logo">
-          <img src={`${base}favicon.svg`} alt="" />
+          <img src={`${base}medalhao-192.png`} alt="" />
           <h1>Kairós Caixa</h1>
         </div>
         <h2 style={{ marginBottom: 12 }}>{titulo}</h2>

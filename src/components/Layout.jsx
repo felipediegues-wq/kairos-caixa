@@ -31,7 +31,7 @@ export default function Layout() {
     <div className="app">
       <aside className={`sidebar ${aberta ? 'aberta' : ''}`}>
         <div className="marca">
-          <img src={`${base}favicon.svg`} alt="" />
+          <img src={`${base}medalhao-192.png`} alt="" />
           <div>
             <b>Kairós Caixa</b>
             <span>{config?.nome_grupo || 'Controle de gastos'}</span>

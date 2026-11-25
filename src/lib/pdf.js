@@ -3,7 +3,8 @@ import autoTable from 'jspdf-autotable'
 import { brl, num, pct, dataBR, rotuloMes, rotuloMesLongo, chaveMes, somarMeses, inicioMesISO } from './format'
 import { totais, comSaldo, resumoMensal, matrizFluxo, gastosPor, somaPor } from './relatorios'
 
-const AZUL = [31, 56, 100]
+const AZUL = [29, 29, 31] // preto do medalhão
+const OURO = [212, 160, 23]
 const VERDE = [46, 139, 87]
 const VERMELHO = [192, 57, 43]
 const ROXO = [125, 60, 152]
@@ -14,7 +15,7 @@ const CINZA = [91, 101, 117]
  * opcoes: { de, ate, secoes: {resumo, grafico, mensal, fluxo, categorias, lancamentos, assinaturas}, emitidoPor }
  */
 export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
-  const { de, ate, secoes, emitidoPor } = opcoes
+  const { de, ate, secoes, emitidoPor, logo } = opcoes
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
   const grupo = config?.nome_grupo || 'Grupo'
   const periodoTxt = `${dataBR(de)} a ${dataBR(ate)}`
@@ -30,11 +31,23 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
     const w = doc.internal.pageSize.getWidth()
     doc.setFillColor(...AZUL)
     doc.rect(0, 0, w, 20, 'F')
-    doc.setTextColor(255)
+    doc.setFillColor(...OURO)
+    doc.rect(0, 20, w, 0.9, 'F')
+    let x = 12
+    if (logo) {
+      try {
+        doc.addImage(logo, 'PNG', 9, 2, 16, 16)
+        x = 29
+      } catch {
+        /* sem logo */
+      }
+    }
+    doc.setTextColor(...OURO)
     doc.setFont('helvetica', 'bold').setFontSize(14)
-    doc.text(grupo, 12, 9)
+    doc.text(grupo, x, 9.5)
+    doc.setTextColor(255)
     doc.setFont('helvetica', 'normal').setFontSize(9)
-    doc.text(`Relatório de caixa · ${periodoTxt}`, 12, 15)
+    doc.text(`Relatório de caixa · ${periodoTxt}`, x, 15)
     doc.setTextColor(0)
   }
   const rodapes = () => {
@@ -52,7 +65,7 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
   const titulo = (txt, y) => {
     doc.setFont('helvetica', 'bold').setFontSize(11.5).setTextColor(...AZUL)
     doc.text(txt, 12, y)
-    doc.setDrawColor(...AZUL).setLineWidth(0.4)
+    doc.setDrawColor(...OURO).setLineWidth(0.5)
     doc.line(12, y + 1.5, doc.internal.pageSize.getWidth() - 12, y + 1.5)
     doc.setTextColor(0).setFont('helvetica', 'normal')
     return y + 6

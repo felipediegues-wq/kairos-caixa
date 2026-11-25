@@ -22,6 +22,22 @@ const SECOES = [
   ['fluxo', 'Fluxo de caixa por categoria (página em paisagem)'],
 ]
 
+// Medalhão do grupo em base64, para o cabeçalho do PDF
+async function carregarLogo() {
+  try {
+    const resp = await fetch(`${import.meta.env.BASE_URL}medalhao-192.png`)
+    const blob = await resp.blob()
+    return await new Promise((ok) => {
+      const r = new FileReader()
+      r.onload = () => ok(r.result)
+      r.onerror = () => ok(null)
+      r.readAsDataURL(blob)
+    })
+  } catch {
+    return null
+  }
+}
+
 export default function Relatorios() {
   const { config, lancamentos, categorias, carregando } = useDados()
   const { perfil } = useAuth()
@@ -38,7 +54,8 @@ export default function Relatorios() {
     setGerando(true)
     try {
       const { gerarPDF } = await import('../lib/pdf') // carrega o gerador só quando precisa
-      gerarPDF({ config, lancamentos, categorias, opcoes: { de, ate, secoes, emitidoPor: perfil?.nome } })
+      const logo = await carregarLogo()
+      gerarPDF({ config, lancamentos, categorias, opcoes: { de, ate, secoes, emitidoPor: perfil?.nome, logo } })
     } catch (e) {
       console.error(e)
       setErro('Não foi possível gerar o PDF: ' + e.message)
