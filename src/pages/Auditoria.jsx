@@ -3,14 +3,14 @@ import { supabase, mensagemErro } from '../lib/supabase'
 import { Alerta, Carregando } from '../components/ui'
 import { dataHoraBR, dataBR, brl } from '../lib/format'
 
-const TABELAS = { lancamentos: 'Lançamento', categorias: 'Categoria', formas_pagamento: 'Forma de pagamento', configuracoes: 'Configurações', profiles: 'Usuário' }
+const TABELAS = { lancamentos: 'Lançamento', categorias: 'Categoria', formas_pagamento: 'Forma de pagamento', configuracoes: 'Configurações', usuarios: 'Usuário' }
 const ACOES = { INSERT: 'Incluiu', UPDATE: 'Alterou', DELETE: 'Excluiu' }
 const IGNORAR = new Set(['atualizado_em', 'atualizado_por', 'criado_em', 'criado_por'])
 
 function resumo(r) {
   const d = r.depois || r.antes || {}
   if (r.tabela === 'lancamentos') return `${dataBR(d.data)} · ${d.tipo} · ${d.descricao} · ${brl(d.valor)}`
-  if (r.tabela === 'profiles') return `${d.nome || ''} (${d.email || ''})`
+  if (r.tabela === 'usuarios') return `${d.nome || ''} (${d.email || ''})`
   if (r.tabela === 'configuracoes') return d.nome_grupo
   return d.nome || ''
 }

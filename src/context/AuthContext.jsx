@@ -16,8 +16,13 @@ export function AuthProvider({ children }) {
       setPerfil(null)
       return
     }
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
-    setPerfil(data || { id: user.id, email: user.email, nome: '', papel: 'leitura', ativo: false })
+    // cria o cadastro no Kairós no primeiro acesso (o 1º usuário vira admin) e devolve o perfil
+    const { data, error } = await supabase.rpc('registrar_acesso')
+    if (error) {
+      setPerfil({ id: user.id, email: user.email, nome: '', papel: 'leitura', ativo: false, erro: error.message })
+      return
+    }
+    setPerfil(data)
   }, [])
 
   useEffect(() => {

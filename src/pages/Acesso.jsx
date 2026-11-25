@@ -23,6 +23,17 @@ function Caixa({ titulo, children }) {
 // Usuário entrou, mas o admin ainda não liberou
 export function Aguardando() {
   const { perfil, sair, recarregarPerfil } = useAuth()
+  if (perfil?.erro)
+    return (
+      <Caixa titulo="Não foi possível acessar o banco">
+        <Alerta tipo="erro">{mensagemErro({ message: perfil.erro })}</Alerta>
+        <p className="muted small">Detalhe técnico: {perfil.erro}</p>
+        <div className="acoes" style={{ marginTop: 16 }}>
+          <button className="btn-primario" onClick={recarregarPerfil}>Tentar de novo</button>
+          <button onClick={sair}>Sair</button>
+        </div>
+      </Caixa>
+    )
   return (
     <Caixa titulo="Aguardando liberação">
       <p>

@@ -27,7 +27,7 @@ export function DadosProvider({ children }) {
           supabase
             .from('lancamentos')
             .select(
-              '*, categoria:categorias(id,nome,tipo), forma:formas_pagamento(id,nome), autor:profiles!lancamentos_criado_por_fkey(nome), editor:profiles!lancamentos_atualizado_por_fkey(nome)'
+              '*, categoria:categorias(id,nome,tipo), forma:formas_pagamento(id,nome), autor:usuarios!lancamentos_criado_por_fkey(nome), editor:usuarios!lancamentos_atualizado_por_fkey(nome)'
             )
             .order('data')
             .order('id')

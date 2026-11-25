@@ -33,24 +33,28 @@ As permissões são garantidas **no banco** (Row Level Security do Supabase), n�
 
 ## Como colocar no ar (uma vez só, ~15 minutos)
 
-### 1. Criar o projeto no Supabase
-1. Entre em <https://supabase.com> e crie uma conta (pode usar o login do GitHub).
-2. **New project** → dê um nome (ex.: `kairos-caixa`), crie uma senha do banco (guarde) e escolha a região **South America (São Paulo)**.
-3. Espere 1–2 minutos até o projeto ficar pronto.
+### 1. Projeto Supabase
+O Kairós **pode usar o mesmo projeto Supabase de outro sistema** (ex.: o das Ações). Tudo dele fica no schema **`caixa`**, separado do `public`: não altera tabelas, funções nem gatilhos do outro sistema.
 
-### 2. Criar as tabelas
-1. No menu do Supabase: **SQL Editor** → **New query**.
-2. Copie todo o conteúdo do arquivo [`supabase/schema.sql`](supabase/schema.sql), cole e clique **Run**.
-3. Deve aparecer “Success”. (Pode rodar de novo no futuro sem perder dados.)
+- **Usando um projeto existente:** só abra o projeto no <https://supabase.com>.
+- **Projeto novo:** **New project** → nome, senha do banco e região **South America (São Paulo)**.
+
+### 2. Criar as tabelas e liberar o schema na API
+1. **SQL Editor** → **New query** → cole todo o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) → **Run**. Deve aparecer “Success”. (Pode rodar de novo no futuro sem perder dados.)
+2. **Project Settings → Data API** (ou **API**) → em **Exposed schemas**, **adicione `caixa`** (mantenha os que já estão, como `public`) → **Save**.
+
+> Sem o passo 2.2 o site mostra o erro “schema caixa não está liberado”.
 
 ### 3. Configurar o login
 Em **Authentication → URL Configuration**:
-- **Site URL:** `https://felipediegues-wq.github.io/kairos-caixa/`
-- **Redirect URLs:** adicione `https://felipediegues-wq.github.io/kairos-caixa/**` e, se for testar no computador, `http://localhost:5173/**`
+- **Redirect URLs:** adicione `https://felipediegues-wq.github.io/kairos-caixa/**` (e `http://localhost:5173/**` se for testar no computador).
+- **Site URL:** se o projeto já é usado por outro sistema, **não mude** (deixe a do outro sistema). Em projeto só do Kairós, use `https://felipediegues-wq.github.io/kairos-caixa/`.
 
-Em **Authentication → Sign In / Providers → Email**: deixe **Enable Email** ligado. “Confirm email” ligado é o recomendado (a pessoa confirma o e-mail antes de entrar).
+Em **Authentication → Sign In / Providers → Email**: deixe **Enable Email** ligado. “Confirm email” ligado é o recomendado.
 
-> O Supabase gratuito envia poucos e-mails por hora. Para um grupo pequeno costuma bastar; se precisar de mais, configure um SMTP próprio em **Authentication → Emails → SMTP Settings**.
+> **Projeto compartilhado:** as contas de login são as mesmas dos dois sistemas. Quem já tem conta no outro sistema entra no Kairós com o mesmo e-mail e senha, mas **só vê o caixa depois que um administrador do Kairós liberar**. E quem criar conta pelo Kairós passa a existir também no cadastro de login do outro sistema (o acesso a cada um continua separado). Os e-mails de confirmação/recuperação usam os modelos já configurados no projeto.
+>
+> O Supabase gratuito envia poucos e-mails por hora; se precisar de mais, configure SMTP próprio em **Authentication → Emails → SMTP Settings**.
 
 ### 4. Copiar as chaves do Supabase
 Em **Project Settings → API** (ou **Data API**), copie:
@@ -72,8 +76,8 @@ No repositório: **Settings → Secrets and variables → Actions → New reposi
 Toda vez que algo for alterado na branch `main`, o site é publicado de novo automaticamente.
 
 ### 7. Primeiro acesso
-1. Abra o site e clique em **Criar conta**. **A primeira conta criada vira Administrador automaticamente.**
-2. Confirme o e-mail e entre.
+1. Abra o site e entre (ou clique em **Criar conta**, se ainda não tiver login no projeto). **A primeira pessoa que entrar no Kairós vira Administrador automaticamente** — então entre você primeiro.
+2. Se criou conta agora, confirme o e-mail e entre.
 3. Vá em **Configurações** e informe o nome do grupo, o saldo inicial e o mês inicial.
 4. Mande o endereço do site para o grupo. Cada pessoa cria a própria conta e aparece em **Usuários e acessos** como “Aguardando”: escolha o perfil e clique em **Liberar**.
 
@@ -92,7 +96,7 @@ npm run dev                  # abre em http://localhost:5173
 ## Estrutura
 
 ```
-supabase/schema.sql      tabelas, permissões (RLS), auditoria e dados iniciais
+supabase/schema.sql      schema "caixa": tabelas, permissões (RLS), auditoria e dados iniciais
 src/lib/                 conexão com o Supabase, formatação, cálculos e gerador de PDF
 src/context/             login/perfil e carregamento dos dados
 src/pages/               uma tela por arquivo
@@ -101,6 +105,7 @@ src/pages/               uma tela por arquivo
 
 ## Bom saber
 
+- **Remover o Kairós do banco** (sem afetar o outro sistema): `drop schema caixa cascade;` no SQL Editor — apaga todos os dados do caixa.
 - **Projeto gratuito do Supabase pausa** depois de 7 dias sem nenhum acesso. Se acontecer, entre no painel do Supabase e clique em **Restore**: os dados continuam lá.
 - **Backup:** em Lançamentos, use *Exportar Excel (CSV)* de vez em quando; ou no Supabase, **Database → Backups** (planos pagos) / `pg_dump`.
 - **Esqueceu a senha?** Na tela de login: *Esqueci minha senha*.

@@ -8,7 +8,14 @@ export const supabaseConfigurado = Boolean(url && key)
 // flowType 'pkce': os links de e-mail voltam com ?code=..., o que funciona com o HashRouter (#/rota)
 export const supabase = supabaseConfigurado
   ? createClient(url, key, {
-      auth: { flowType: 'pkce', detectSessionInUrl: true, persistSession: true, autoRefreshToken: true },
+      db: { schema: 'caixa' }, // tudo do Kairós fica no schema "caixa" (ver supabase/schema.sql)
+      auth: {
+        flowType: 'pkce',
+        detectSessionInUrl: true,
+        persistSession: true,
+        autoRefreshToken: true,
+        storageKey: 'kairos-caixa-auth',
+      },
     })
   : null
 
@@ -27,7 +34,8 @@ export function mensagemErro(err) {
     [/Email not confirmed/i, 'Confirme seu e-mail pelo link que enviamos antes de entrar.'],
     [/User already registered/i, 'Já existe uma conta com este e-mail.'],
     [/Password should be at least/i, 'A senha precisa ter pelo menos 6 caracteres.'],
-    [/row-level security|permission denied/i, 'Você não tem permissão para fazer isso.'],
+    [/row-level security|permission denied for table/i, 'Você não tem permissão para fazer isso.'],
+    [/Invalid schema|permission denied for schema|schema must be one of/i, 'O schema "caixa" não está liberado na API do Supabase. Veja o passo 2 do README (Exposed schemas).'],
     [/violates foreign key constraint/i, 'Este item está em uso por lançamentos e não pode ser excluído. Desative-o.'],
     [/duplicate key value/i, 'Já existe um registro com esse nome.'],
     [/rate limit/i, 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'],

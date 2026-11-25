@@ -11,7 +11,7 @@ export default function Usuarios() {
   const [ok, setOk] = useState('')
 
   const carregar = useCallback(async () => {
-    const { data, error } = await supabase.from('profiles').select('*').order('ativo').order('nome')
+    const { data, error } = await supabase.from('usuarios').select('*').order('ativo').order('nome')
     if (error) setErro(mensagemErro(error))
     else setLista(data)
   }, [])
@@ -20,7 +20,7 @@ export default function Usuarios() {
   async function alterar(p, mudanca, txt) {
     setErro('')
     setOk('')
-    const { error } = await supabase.from('profiles').update(mudanca).eq('id', p.id)
+    const { error } = await supabase.from('usuarios').update(mudanca).eq('id', p.id)
     if (error) return setErro(mensagemErro(error))
     setOk(txt)
     await carregar()
