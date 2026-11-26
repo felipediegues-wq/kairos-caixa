@@ -116,10 +116,16 @@ export default function Mensalidades() {
             <button className={filtro === 'todos' ? 'ativa' : ''} onClick={() => setFiltro('todos')}>Todos os casais ({casais.length})</button>
           </div>
 
+          <div className="legenda-meses" style={{ marginBottom: 8 }}>
+            <span className="tag mes-pago">✓ pago</span>
+            <span className="tag mes-parcial">½ parcial</span>
+            <span className="tag mes-aberto">em aberto</span>
+            <span>· passe o mouse (ou toque) no mês para ver o valor</span>
+          </div>
           <div className="tabela-wrap">
             <table className="tabela">
               <thead>
-                <tr><th>Casal</th><th>Função</th><th>Meses em aberto</th><th className="right">Pago</th><th className="right">Em aberto</th><th></th></tr>
+                <tr><th>Casal</th><th>Função</th><th>Meses</th><th className="right">Pago</th><th className="right">Em aberto</th><th></th></tr>
               </thead>
               <tbody>
                 {visiveis.length === 0 && (
@@ -130,15 +136,17 @@ export default function Mensalidades() {
                     <td><b>{c.nome}</b></td>
                     <td className="small">{FUNCOES[c.funcao]}</td>
                     <td>
-                      {c.emAberto.length === 0 ? <span className="tag tesoureiro">Em dia</span> : (
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                          {c.emAberto.map((m) => (
-                            <span key={m.mes} className={`tag ${m.parcial ? 'pendente' : 'Saída'}`} title={m.parcial ? `Parcial: faltam ${brl(m.falta)}` : `Falta ${brl(m.falta)}`}>
-                              {rotuloMes(m.mes)}{m.parcial ? ' (parcial)' : ''}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {c.meses.map((m) => {
+                          const st = m.falta <= 0.004 ? 'pago' : m.pago > 0 ? 'parcial' : 'aberto'
+                          const dica = st === 'pago' ? `Pago ${brl(m.pago)}` : st === 'parcial' ? `Pago ${brl(m.pago)} de ${brl(m.esperado)} · faltam ${brl(m.falta)}` : `Em aberto · ${brl(m.falta)}`
+                          return (
+                            <span key={m.mes} className={`tag mes-${st}`} title={dica}>
+                              {st === 'pago' ? '✓ ' : ''}{rotuloMes(m.mes)}{st === 'parcial' ? ' ½' : ''}
                             </span>
-                          ))}
-                        </div>
-                      )}
+                          )
+                        })}
+                      </div>
                     </td>
                     <td className="right nowrap">{brl(c.pago)}</td>
                     <td className={`right nowrap ${c.falta > 0.004 ? 'neg' : ''}`}><b>{brl(c.falta)}</b></td>
@@ -146,7 +154,7 @@ export default function Mensalidades() {
                   </tr>,
                   aberto === c.id && (
                     <tr key={c.id + 'd'}>
-                      <td colSpan={6} style={{ background: '#fafafa' }}>
+                      <td colSpan={6} style={{ background: 'var(--superficie-2)' }}>
                         <table className="tabela" style={{ maxWidth: 520 }}>
                           <thead><tr><th>Mês</th><th className="right">Valor</th><th className="right">Pago</th><th className="right">Falta</th></tr></thead>
                           <tbody>

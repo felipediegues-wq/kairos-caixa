@@ -9,6 +9,19 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import { Aguardando, RedefinirSenha, SemConfiguracao } from './pages/Acesso'
 import { Carregando } from './components/ui'
+import { aplicarTema, temaSalvo } from './lib/tema'
+
+aplicarTema(temaSalvo())
+
+// Permite instalar como aplicativo (celular e computador)
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  window.__kairosInstalar = e
+  window.dispatchEvent(new Event('kairos-instalavel'))
+})
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {}))
+}
 
 const Painel = lazy(() => import('./pages/Painel'))
 const Lancamentos = lazy(() => import('./pages/Lancamentos'))

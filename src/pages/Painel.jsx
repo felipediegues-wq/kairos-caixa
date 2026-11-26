@@ -127,7 +127,7 @@ export default function Painel() {
                 <YAxis type="category" dataKey="nome" width={160} tick={{ fontSize: 12 }} />
                 <Tooltip formatter={dica} />
                 <Bar dataKey="valor" name="Total" fill={CORES.vermelho} radius={[0, 4, 4, 0]}>
-                  <LabelList dataKey="valor" position="right" formatter={brl} style={{ fontSize: 12, fill: '#1f2733' }} />
+                  <LabelList dataKey="valor" position="right" formatter={brl} style={{ fontSize: 12, fill: 'var(--texto)' }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

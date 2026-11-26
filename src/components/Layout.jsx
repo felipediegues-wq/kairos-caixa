@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useDados } from '../context/DadosContext'
 import { PAPEIS } from '../lib/format'
 import { Alerta } from './ui'
+import { TEMAS, useTema } from '../lib/tema'
 
 const base = import.meta.env.BASE_URL
 
@@ -11,6 +12,7 @@ export default function Layout() {
   const { perfil, eAdmin, sair, podeVerDevedores } = useAuth()
   const { config, erro } = useDados()
   const [aberta, setAberta] = useState(false)
+  const [tema, setTema] = useTema()
   const loc = useLocation()
 
   const links = [
@@ -62,6 +64,11 @@ export default function Layout() {
         <div className="usuario-box">
           <b>{perfil?.nome || perfil?.email}</b>
           <span>{PAPEIS[perfil?.papel] || ''}</span>
+          <div className="temas" style={{ marginTop: 10 }} role="group" aria-label="Tema">
+            {Object.entries(TEMAS).map(([k, t]) => (
+              <button key={k} className={tema === k ? 'ativo' : ''} onClick={() => setTema(k)} title={`Tema ${t.nome}`}>{t.nome}</button>
+            ))}
+          </div>
           <button className="btn-claro btn-pequeno" onClick={sair}>
             Sair
           </button>

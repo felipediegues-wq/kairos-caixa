@@ -51,7 +51,7 @@ export function Carregando({ texto = 'Carregando…' }) {
 }
 
 export const CORES = {
-  azul: '#1d1d1f',
+  azul: 'var(--destaque-texto)',
   ouro: '#d4a017',
   azul2: '#2e75b6',
   verde: '#2e8b57',
