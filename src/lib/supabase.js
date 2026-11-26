@@ -38,6 +38,7 @@ export function mensagemErro(err) {
     [/Invalid schema|permission denied for schema|schema must be one of/i, 'O schema "caixa" não está liberado na API do Supabase. Veja o passo 2 do README (Exposed schemas).'],
     [/violates foreign key constraint/i, 'Este item está em uso por lançamentos e não pode ser excluído. Desative-o.'],
     [/duplicate key value/i, 'Já existe um registro com esse nome.'],
+    [/caixa\.casais|caixa\.mensalidade_valores|relatorio_mensalidades|pode_ver_devedores|column .*casal_id|column .*competencia|column .*mensalidade/i, 'Falta atualizar o banco: rode o arquivo supabase/002_casais_mensalidades.sql no SQL Editor do Supabase.'],
     [/Signups not allowed/i, 'A criação de contas pelo site está desativada. Peça ao administrador do grupo para criar o seu acesso.'],
     [/rate limit/i, 'Muitas tentativas. Aguarde alguns minutos e tente de novo.'],
     [/Failed to fetch/i, 'Sem conexão com o servidor. Verifique sua internet.'],

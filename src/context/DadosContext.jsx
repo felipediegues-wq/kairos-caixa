@@ -12,6 +12,8 @@ export function DadosProvider({ children }) {
   const [categorias, setCategorias] = useState([])
   const [formas, setFormas] = useState([])
   const [lancamentos, setLancamentos] = useState([])
+  const [casais, setCasais] = useState([])
+  const [valoresMensalidade, setValoresMensalidade] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
 
@@ -19,24 +21,28 @@ export function DadosProvider({ children }) {
     if (!ativo) return
     setErro('')
     try {
-      const [cfg, cats, fps, lancs] = await Promise.all([
+      const [cfg, cats, fps, cas, vals, lancs] = await Promise.all([
         supabase.from('configuracoes').select('*').eq('id', 1).maybeSingle(),
         supabase.from('categorias').select('*').order('tipo').order('ordem').order('nome'),
         supabase.from('formas_pagamento').select('*').order('ordem').order('nome'),
+        supabase.from('casais').select('*').order('nome'),
+        supabase.from('mensalidade_valores').select('*').order('vigente_desde'),
         buscarTodos(() =>
           supabase
             .from('lancamentos')
             .select(
-              '*, categoria:categorias(id,nome,tipo), forma:formas_pagamento(id,nome), autor:usuarios!lancamentos_criado_por_fkey(nome), editor:usuarios!lancamentos_atualizado_por_fkey(nome)'
+              '*, categoria:categorias(id,nome,tipo,mensalidade), forma:formas_pagamento(id,nome), casal:casais(id,nome), autor:usuarios!lancamentos_criado_por_fkey(nome), editor:usuarios!lancamentos_atualizado_por_fkey(nome)'
             )
             .order('data')
             .order('id')
         ),
       ])
-      for (const r of [cfg, cats, fps]) if (r.error) throw r.error
+      for (const r of [cfg, cats, fps, cas, vals]) if (r.error) throw r.error
       setConfig(cfg.data || { nome_grupo: 'Grupo', saldo_inicial: 0, mes_inicial: new Date().toISOString().slice(0, 7) + '-01' })
       setCategorias(cats.data)
       setFormas(fps.data)
+      setCasais(cas.data)
+      setValoresMensalidade(vals.data)
       setLancamentos(lancs)
     } catch (e) {
       setErro(mensagemErro(e))
@@ -50,7 +56,7 @@ export function DadosProvider({ children }) {
   }, [recarregar])
 
   return (
-    <DadosCtx.Provider value={{ config, categorias, formas, lancamentos, carregando, erro, recarregar }}>
+    <DadosCtx.Provider value={{ config, categorias, formas, lancamentos, casais, valoresMensalidade, carregando, erro, recarregar }}>
       {children}
     </DadosCtx.Provider>
   )

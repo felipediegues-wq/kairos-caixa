@@ -6,6 +6,7 @@ const AuthCtx = createContext(null)
 export function AuthProvider({ children }) {
   const [sessao, setSessao] = useState(null)
   const [perfil, setPerfil] = useState(null)
+  const [podeVerDevedores, setPodeVerDevedores] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [recuperandoSenha, setRecuperandoSenha] = useState(
     () => new URLSearchParams(window.location.search).has('recuperar')
@@ -14,6 +15,7 @@ export function AuthProvider({ children }) {
   const carregarPerfil = useCallback(async (user) => {
     if (!user) {
       setPerfil(null)
+      setPodeVerDevedores(false)
       return
     }
     // cria o cadastro no Kairós no primeiro acesso (o 1º usuário vira admin) e devolve o perfil
@@ -23,6 +25,11 @@ export function AuthProvider({ children }) {
       return
     }
     setPerfil(data)
+    if (data?.ativo) {
+      // relatório de devedores: casal coordenador, casal secretário ou admin (decidido no banco)
+      const r = await supabase.rpc('pode_ver_devedores')
+      setPodeVerDevedores(Boolean(r.data))
+    } else setPodeVerDevedores(false)
   }, [])
 
   useEffect(() => {
@@ -56,6 +63,7 @@ export function AuthProvider({ children }) {
     ativo: Boolean(perfil?.ativo),
     eAdmin: papel === 'admin',
     podeEditar: papel === 'admin' || papel === 'tesoureiro',
+    podeVerDevedores: Boolean(perfil?.ativo) && podeVerDevedores,
     recuperandoSenha,
     fimRecuperacao: () => setRecuperandoSenha(false),
     recarregarPerfil: () => carregarPerfil(sessao?.user),

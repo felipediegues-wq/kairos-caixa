@@ -19,6 +19,8 @@ const Usuarios = lazy(() => import('./pages/Usuarios'))
 const Configuracoes = lazy(() => import('./pages/Configuracoes'))
 const Auditoria = lazy(() => import('./pages/Auditoria'))
 const Perfil = lazy(() => import('./pages/Perfil'))
+const Casais = lazy(() => import('./pages/Casais'))
+const Mensalidades = lazy(() => import('./pages/Mensalidades'))
 
 function SoAdmin({ children }) {
   const { eAdmin } = useAuth()
@@ -41,6 +43,8 @@ function App() {
             <Route path="fluxo" element={<Fluxo />} />
             <Route path="relatorios" element={<Relatorios />} />
             <Route path="perfil" element={<Perfil />} />
+            <Route path="casais" element={<Casais />} />
+            <Route path="mensalidades" element={<Mensalidades />} />
             <Route path="categorias" element={<SoAdmin><Categorias /></SoAdmin>} />
             <Route path="usuarios" element={<SoAdmin><Usuarios /></SoAdmin>} />
             <Route path="configuracoes" element={<SoAdmin><Configuracoes /></SoAdmin>} />

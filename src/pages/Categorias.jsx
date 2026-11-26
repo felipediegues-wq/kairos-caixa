@@ -79,7 +79,7 @@ export default function Categorias() {
       <div className="tabela-wrap" style={{ marginTop: 12 }}>
         <table className="tabela">
           <thead>
-            <tr><th>Ordem</th><th>Nome</th><th>Situação</th><th className="right">Lançamentos</th><th></th></tr>
+            <tr><th>Ordem</th><th>Nome</th>{aba === 'Entrada' && <th>Mensalidade de casal</th>}<th>Situação</th><th className="right">Lançamentos</th><th></th></tr>
           </thead>
           <tbody>
             {itens.length === 0 && <tr><td colSpan={5} className="vazio">Nenhum item.</td></tr>}
@@ -90,6 +90,16 @@ export default function Categorias() {
                   <button className="btn-link" onClick={() => mover(item, 1)} title="Descer">▼</button>
                 </td>
                 <td><b>{item.nome}</b></td>
+                {aba === 'Entrada' && (
+                  <td>
+                    <label className="check" title="Lançamentos desta categoria pedem o casal e os meses pagos">
+                      <input type="checkbox" checked={Boolean(item.mensalidade)}
+                        onChange={() => executar(supabase.from('categorias').update({ mensalidade: !item.mensalidade }).eq('id', item.id),
+                          !item.mensalidade ? `"${item.nome}" agora pede casal e mês (mensalidade).` : `"${item.nome}" não é mais mensalidade.`)} />
+                      {item.mensalidade ? 'Sim' : 'Não'}
+                    </label>
+                  </td>
+                )}
                 <td>{item.ativo ? <span className="tag tesoureiro">Ativo</span> : <span className="tag inativo">Inativo</span>}</td>
                 <td className="right">{uso(item.id)}</td>
                 <td className="right nowrap">

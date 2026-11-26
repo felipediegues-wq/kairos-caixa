@@ -2,10 +2,12 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase, mensagemErro, urlDoSite } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { Alerta, Carregando } from '../components/ui'
-import { PAPEIS, dataBR } from '../lib/format'
+import { PAPEIS, dataBR, FUNCOES } from '../lib/format'
+import { useDados } from '../context/DadosContext'
 
 export default function Usuarios() {
   const { usuario, recarregarPerfil } = useAuth()
+  const { casais } = useDados()
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   const [ok, setOk] = useState('')
@@ -53,6 +55,8 @@ export default function Usuarios() {
         <div className="small muted" style={{ marginTop: 10 }}>
           <b>Administrador</b>: tudo, inclusive usuários, categorias e configurações · <b>Tesoureiro</b>: inclui, edita e exclui lançamentos ·{' '}
           <b>Leitura</b>: só consulta painel, lançamentos e relatórios.
+          <br />
+          <b>Casal</b>: ligue o login ao casal. Quem é do <b>casal coordenador</b> ou do <b>casal secretário</b> também vê as <i>Mensalidades em aberto</i> e pode cadastrar casais.
         </div>
       </div>
 
@@ -63,7 +67,7 @@ export default function Usuarios() {
       <div className="tabela-wrap" style={{ marginTop: 16 }}>
         <table className="tabela">
           <thead>
-            <tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Situação</th><th>Desde</th><th></th></tr>
+            <tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Casal</th><th>Situação</th><th>Desde</th><th></th></tr>
           </thead>
           <tbody>
             {lista.map((p) => (
@@ -73,6 +77,15 @@ export default function Usuarios() {
                 <td>
                   <select value={p.papel} onChange={(e) => alterar(p, { papel: e.target.value }, `Perfil de ${p.nome || p.email} alterado para ${PAPEIS[e.target.value]}.`)}>
                     {Object.entries(PAPEIS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                  </select>
+                </td>
+                <td>
+                  <select value={p.casal_id || ''} onChange={(e) => {
+                    const c = casais.find((x) => String(x.id) === e.target.value)
+                    alterar(p, { casal_id: e.target.value ? Number(e.target.value) : null }, c ? `${p.nome || p.email} ligado ao ${c.nome} (${FUNCOES[c.funcao]}).` : 'Vínculo com casal removido.')
+                  }}>
+                    <option value="">— nenhum —</option>
+                    {casais.filter((c) => !c.mes_saida || c.id === p.casal_id).map((c) => <option key={c.id} value={c.id}>{c.nome} · {FUNCOES[c.funcao]}</option>)}
                   </select>
                 </td>
                 <td>{p.ativo ? <span className="tag tesoureiro">Ativo</span> : <span className="tag pendente">Aguardando / bloqueado</span>}</td>

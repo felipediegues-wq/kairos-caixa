@@ -8,7 +8,7 @@ import { Alerta } from './ui'
 const base = import.meta.env.BASE_URL
 
 export default function Layout() {
-  const { perfil, eAdmin, sair } = useAuth()
+  const { perfil, eAdmin, sair, podeVerDevedores } = useAuth()
   const { config, erro } = useDados()
   const [aberta, setAberta] = useState(false)
   const loc = useLocation()
@@ -18,6 +18,8 @@ export default function Layout() {
     { to: '/lancamentos', ico: '🧾', txt: 'Lançamentos' },
     { to: '/fluxo', ico: '📅', txt: 'Fluxo de Caixa' },
     { to: '/relatorios', ico: '📄', txt: 'Relatórios' },
+    { to: '/casais', ico: '👫', txt: 'Casais' },
+    ...(podeVerDevedores ? [{ to: '/mensalidades', ico: '💰', txt: 'Mensalidades em aberto' }] : []),
   ]
   const admin = [
     { to: '/categorias', ico: '🏷️', txt: 'Categorias e formas' },

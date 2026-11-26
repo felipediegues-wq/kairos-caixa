@@ -205,3 +205,20 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
   background: var(--preto); color: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; border-bottom: 3px solid var(--ouro); }
 .previa-topo h2 { color: var(--ouro); }
 .previa-topo .muted { color: #c9c9cf; }
+
+/* casais e mensalidades */
+.tag.funcao-coordenador { background: #fff2cc; color: #7a5600; }
+.tag.funcao-vice_coordenador { background: #fff7e0; color: #8a6a10; }
+.tag.funcao-secretario { background: #e3ebf7; color: #1f3864; }
+.tag.funcao-financeiro { background: var(--verde-claro); color: #1e6b3a; }
+.tag.funcao-boa_vontade { background: var(--roxo-claro); color: #5b2c6f; }
+.tag.funcao-membro { background: #eef0f3; color: #4b5563; }
+.tag.funcao-casal { background: #fff6d6; color: #6b5200; font-weight: 600; }
+.grade-meses { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; }
+.grade-meses .mes { flex-direction: column; align-items: center; gap: 2px; padding: 7px 4px; font-weight: 500; border: 1px solid var(--borda); background: #fff; }
+.grade-meses .mes span { font-size: 0.75rem; color: var(--texto-2); }
+.grade-meses .mes.quitado { background: var(--verde-claro); border-color: #bfe3cd; }
+.grade-meses .mes.quitado span { color: #1e6b3a; }
+.grade-meses .mes.parcial { background: #fff7e0; border-color: #f3dea0; }
+.grade-meses .mes.marcado { background: var(--ouro); border-color: var(--ouro-2); box-shadow: 0 0 0 2px rgba(242,183,5,.35); }
+.grade-meses .mes.marcado span { color: #1d1d1f; }

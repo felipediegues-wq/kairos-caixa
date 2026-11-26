@@ -63,3 +63,12 @@ export const PAPEIS = {
   leitura: 'Leitura',
 }
 export const TIPOS = ['Entrada', 'Saída', 'Retirada']
+
+export const FUNCOES = {
+  coordenador: 'Casal coordenador',
+  vice_coordenador: 'Casal vice-coordenador',
+  secretario: 'Casal secretário',
+  financeiro: 'Casal financeiro',
+  boa_vontade: 'Boa Vontade',
+  membro: 'Membro',
+}

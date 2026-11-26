@@ -14,6 +14,8 @@ Sistema web de **controle de gastos e fluxo de caixa** para o grupo, com login e
 | **Lançamentos** | Incluir, editar, duplicar e excluir; filtros por período, tipo, categoria e busca; saldo linha a linha; exportar para Excel (CSV) |
 | **Fluxo de Caixa** | Tabela categoria × 12 meses, com saldo inicial, totais, resultado e saldo final de cada mês |
 | **Relatórios (PDF)** | Prestação de contas com resumo, gráfico, mês a mês, categorias, lançamentos, fluxo e linhas de assinatura |
+| **Casais** | Cadastro dos casais do grupo com função (coordenador, vice, secretário, financeiro, Boa Vontade, membro), contato, mês de entrada e de saída |
+| **Mensalidades em aberto** | Quem está em dia e quem deve, mês a mês, com PDF — **só casal coordenador, casal secretário e administrador** |
 | **Categorias e formas** | Adicionar, renomear, ordenar, desativar e excluir (só admin) |
 | **Usuários e acessos** | Liberar ou bloquear pessoas e definir o perfil de cada uma (só admin) |
 | **Configurações** | Nome do grupo, saldo inicial e mês inicial dos relatórios (só admin) |
@@ -42,6 +44,8 @@ O Kairós **pode usar o mesmo projeto Supabase de outro sistema** (ex.: o das A�
 ### 2. Criar as tabelas e liberar o schema na API
 1. **SQL Editor** → **New query** → cole todo o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) → **Run**. Deve aparecer “Success”. (Pode rodar de novo no futuro sem perder dados.)
 2. **Project Settings → Data API** (ou **API**) → em **Exposed schemas**, **adicione `caixa`** (mantenha os que já estão, como `public`) → **Save**.
+
+3. Rode também [`supabase/002_casais_mensalidades.sql`](supabase/002_casais_mensalidades.sql) (casais, mensalidades e relatório de devedores), do mesmo jeito.
 
 > Sem o passo 2.2 o site mostra o erro “schema caixa não está liberado”.
 
@@ -85,6 +89,15 @@ Toda vez que algo for alterado na branch `main`, o site é publicado de novo aut
 
 ---
 
+## Casais e mensalidades
+
+1. **Configurações → Valor da mensalidade:** informe o valor e a partir de quando vale. Para reajustar, adicione um novo valor a partir do mês do reajuste (os meses anteriores mantêm o valor antigo).
+2. **Casais:** cadastre cada casal com a função e o mês em que entrou no grupo (ele passa a dever a partir desse mês). Quando um casal sair, marque *Saiu do grupo* e o último mês.
+3. **Lançamentos → Novo lançamento:** tipo *Entrada*, categoria **Mensalidades (casal)**, escolha o casal e clique nos meses que ele está pagando. O sistema grava um lançamento por mês, com o valor de cada mês (ou o valor que você digitar).
+4. **Usuários e acessos:** ligue o login de cada pessoa ao casal dela. Quem é do **casal coordenador** ou do **casal secretário** passa a ver **Mensalidades em aberto** e pode cadastrar casais. Essa regra é aplicada no banco: os demais não conseguem consultar o relatório nem pela API.
+
+Qualquer categoria de entrada pode virar “mensalidade de casal” em **Categorias e formas** (coluna *Mensalidade de casal*).
+
 ## Rodar no computador (opcional, para desenvolver)
 
 Precisa do [Node.js 20+](https://nodejs.org).
@@ -99,6 +112,7 @@ npm run dev                  # abre em http://localhost:5173
 
 ```
 supabase/schema.sql      schema "caixa": tabelas, permissões (RLS), auditoria e dados iniciais
+supabase/002_*.sql       casais, mensalidades e relatório de devedores
 src/lib/                 conexão com o Supabase, formatação, cálculos e gerador de PDF
 src/context/             login/perfil e carregamento dos dados
 src/pages/               uma tela por arquivo

@@ -121,3 +121,21 @@ export function dadosPeriodo(lancamentos, saldoInicial, de, ate) {
     gastosPorCategoria: gastosPor(doPeriodo, (l) => l.categoria?.nome),
   }
 }
+
+// Valor da mensalidade vigente em um mês ('AAAA-MM-01')
+export function valorMensalidade(valores, mesISO) {
+  let v = 0
+  for (const x of valores) if (x.vigente_desde <= mesISO) v = Number(x.valor)
+  return v
+}
+
+// Total pago de mensalidade por mês ('AAAA-MM' -> valor) para um casal
+export function pagoPorMes(lancamentos, casalId, ignorarId) {
+  const m = new Map()
+  for (const l of lancamentos) {
+    if (l.casal_id !== casalId || !l.competencia || l.id === ignorarId) continue
+    const k = l.competencia.slice(0, 7)
+    m.set(k, (m.get(k) || 0) + Number(l.valor))
+  }
+  return m
+}
