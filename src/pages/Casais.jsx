@@ -154,7 +154,7 @@ function FormCasal({ inicial, aoFechar, aoSalvar }) {
         </>
       }>
       <Alerta tipo="erro">{erro}</Alerta>
-      <form className="form-grade" onSubmit={salvar}>
+      <form className="form-grade form-2col" onSubmit={salvar}>
         <label className="campo">Esposo<input value={f.esposo} onChange={set('esposo')} onBlur={sugerirNome} maxLength={80} /></label>
         <label className="campo">Esposa<input value={f.esposa} onChange={set('esposa')} onBlur={sugerirNome} maxLength={80} /></label>
         <label className="campo largo">
@@ -168,7 +168,7 @@ function FormCasal({ inicial, aoFechar, aoSalvar }) {
           </select>
         </label>
         <label className="campo">
-          No grupo desde (paga a partir de)
+          <span>No grupo desde <span className="dica">(paga a partir deste mês)</span></span>
           <input type="month" value={f.mes_entrada} onChange={set('mes_entrada')} required />
         </label>
         <label className="campo">Telefone / WhatsApp<input value={f.telefone} onChange={set('telefone')} maxLength={30} /></label>
