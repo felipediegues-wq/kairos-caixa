@@ -74,7 +74,7 @@ export function RedefinirSenha() {
       <form onSubmit={salvar}>
         <label className="campo">
           Nova senha
-          <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoFocus autoComplete="new-password" />
+          <input type="password" value={senha} onChange={(e) => setSenha(e.target.value)} autoFocus={!window.matchMedia?.('(pointer: coarse)').matches} autoComplete="new-password" />
         </label>
         <label className="campo">
           Repita a nova senha

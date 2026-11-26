@@ -4,6 +4,9 @@ import { Alerta } from '../components/ui'
 import Medalhao3D from '../components/Medalhao3D'
 
 
+// No celular não abre o teclado sozinho: a pessoa toca no campo quando quiser
+const telaDeToque = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
+
 export default function Login() {
   const [modo, setModo] = useState('entrar') // entrar | criar | esqueci
   const [nome, setNome] = useState('')
@@ -69,12 +72,12 @@ export default function Login() {
           {modo === 'criar' && (
             <label className="campo">
               Seu nome
-              <input value={nome} onChange={(e) => setNome(e.target.value)} required autoFocus />
+              <input value={nome} onChange={(e) => setNome(e.target.value)} required autoFocus={!telaDeToque} />
             </label>
           )}
           <label className="campo">
             E-mail
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" autoFocus={modo !== 'criar'} />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" autoFocus={!telaDeToque && modo !== 'criar'} />
           </label>
           {modo !== 'esqueci' && (
             <label className="campo">
