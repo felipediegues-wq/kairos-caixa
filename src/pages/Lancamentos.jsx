@@ -346,17 +346,17 @@ function FormLancamento({ inicial, categorias, formas, casais, valoresMensalidad
           </select>
         </label>
         <label className="campo">
-          {multiMeses ? 'Valor por mês (R$)' : 'Valor (R$)'}
-          <input inputMode="decimal" placeholder={multiMeses && !valorManual ? 'automático (tabela)' : '0,00'} value={valorExibido}
-            onChange={(e) => { setValorManual(true); setF((x) => ({ ...x, valor: e.target.value })) }}
-            required={!(multiMeses && !valorManual)} style={{ textAlign: 'right' }} />
-        </label>
-        <label className="campo">
           Categoria
           <select value={f.categoria_id} onChange={(e) => { setF((x) => ({ ...x, categoria_id: e.target.value })); setMeses([]) }} required>
             <option value="">Escolha…</option>
             {cats.map((c) => <option key={c.id} value={c.id}>{c.nome}{c.mensalidade ? ' (casal)' : ''}</option>)}
           </select>
+        </label>
+        <label className="campo">
+          {multiMeses ? 'Valor por mês (R$)' : 'Valor (R$)'}
+          <input inputMode="decimal" placeholder={multiMeses && !valorManual ? 'automático (tabela)' : '0,00'} value={valorExibido}
+            onChange={(e) => { setValorManual(true); setF((x) => ({ ...x, valor: e.target.value })) }}
+            required={!(multiMeses && !valorManual)} style={{ textAlign: 'right' }} />
         </label>
         <label className="campo">
           Forma de pagamento
