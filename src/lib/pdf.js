@@ -246,6 +246,10 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
 
   rodapes()
   const nome = `Relatorio_${(grupo || 'caixa').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w]+/g, '_')}_${de}_a_${ate}.pdf`
+  if (opcoes.comoArquivo) {
+    // usado para compartilhar (WhatsApp etc.): devolve o arquivo em vez de baixar
+    return new File([doc.output('blob')], nome, { type: 'application/pdf' })
+  }
   doc.save(nome)
 }
 

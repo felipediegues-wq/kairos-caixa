@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
 import { useDados } from '../context/DadosContext'
 import { useAuth } from '../context/AuthContext'
@@ -19,7 +19,7 @@ const SECOES = [
   ['resumo', 'Resumo do período (saldos, entradas, saídas)'],
   ['grafico', 'Gráfico mensal'],
   ['mensal', 'Resumo mês a mês'],
-  ['categorias', 'Entradas e gastos por categoria'],
+  ['categorias', 'Entradas e saídas por categoria'],
   ['lancamentos', 'Lista de lançamentos com saldo'],
   ['assinaturas', 'Linhas de assinatura (só no PDF)'],
   ['fluxo', 'Fluxo de caixa por categoria'],
@@ -41,6 +41,24 @@ async function carregarLogo() {
   }
 }
 
+// Texto que acompanha o PDF no WhatsApp (sem nomes de casais)
+function textoResumo(config, P, de, ate) {
+  return [
+    `*${config?.nome_grupo || 'Grupo'} – Relatório de caixa*`,
+    `Período: ${dataBR(de)} a ${dataBR(ate)}`,
+    '',
+    `Saldo no início: ${brl(P.saldoNoInicio)}`,
+    `Entradas: ${brl(P.t.entradas)}`,
+    `Saídas: ${brl(P.t.saidas)}`,
+    `Resultado: ${brl(P.t.resultado)}`,
+    `*Saldo no fim: ${brl(P.saldoNoFim)}*`,
+    '',
+    'Relatório completo em PDF em anexo.',
+  ].join('\n')
+}
+
+const ehCelular = () => window.matchMedia?.('(pointer: coarse)').matches
+
 export default function Relatorios() {
   const { config, lancamentos, categorias, carregando } = useDados()
   const { perfil } = useAuth()
@@ -50,7 +68,17 @@ export default function Relatorios() {
   const [erro, setErro] = useState('')
   const [gerando, setGerando] = useState(false)
   const [visualizar, setVisualizar] = useState(false)
+  const [compartilhando, setCompartilhando] = useState(false)
+  const [pronto, setPronto] = useState(null) // { arquivo, texto } quando o celular pede um 2º toque
+  const [aviso, setAviso] = useState('')
   const refPrevia = useRef(null)
+
+  // deixa o gerador de PDF e o logo carregados, para o compartilhamento sair rápido
+  const logoRef = useRef(null)
+  useEffect(() => {
+    import('../lib/pdf')
+    carregarLogo().then((l) => (logoRef.current = l))
+  }, [])
 
   const periodoOk = Boolean(de && ate && ate >= de)
 
@@ -88,6 +116,61 @@ export default function Relatorios() {
     }
   }
 
+  async function enviarArquivo(arquivo, texto) {
+    try {
+      await navigator.share({ files: [arquivo], text: texto, title: arquivo.name })
+      setPronto(null)
+      setAviso('')
+    } catch (e) {
+      if (e.name === 'AbortError') return // a pessoa desistiu
+      if (e.name === 'NotAllowedError') {
+        // alguns celulares exigem um novo toque: mostra o botão de envio
+        setPronto({ arquivo, texto })
+        return
+      }
+      throw e
+    }
+  }
+
+  async function compartilhar() {
+    if (!validar()) return
+    setCompartilhando(true)
+    setAviso('')
+    setPronto(null)
+    try {
+      const { gerarPDF } = await import('../lib/pdf')
+      const logo = logoRef.current || (await carregarLogo())
+      const P = dadosPeriodo(lancamentos, Number(config?.saldo_inicial || 0), de, ate)
+      const texto = textoResumo(config, P, de, ate)
+      const opcoes = { de, ate, secoes, emitidoPor: perfil?.nome, logo }
+      const arquivo = gerarPDF({ config, lancamentos, categorias, opcoes: { ...opcoes, comoArquivo: true } })
+      if (navigator.canShare?.({ files: [arquivo] })) {
+        await enviarArquivo(arquivo, texto)
+      } else {
+        // computador: baixa o PDF e abre o WhatsApp com o texto pronto
+        const url = URL.createObjectURL(arquivo)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = arquivo.name
+        a.click()
+        setTimeout(() => URL.revokeObjectURL(url), 5000)
+        window.open('https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener')
+        setAviso('O PDF foi baixado. No WhatsApp que abriu, escolha o grupo e anexe o arquivo pelo clipe (📎) antes de enviar.')
+      }
+    } catch (e) {
+      console.error(e)
+      setErro('Não foi possível compartilhar: ' + e.message)
+    } finally {
+      setCompartilhando(false)
+    }
+  }
+
+  const botaoWhats = (extra = {}) => (
+    <button className="btn-whats" onClick={compartilhar} disabled={compartilhando} {...extra}>
+      {compartilhando ? 'Preparando…' : <><IconeWhats /> Compartilhar no WhatsApp</>}
+    </button>
+  )
+
   if (carregando) return <Carregando />
   const qtd = lancamentos.filter((l) => l.data >= de && l.data <= ate).length
 
@@ -100,6 +183,13 @@ export default function Relatorios() {
         </div>
       </div>
       <Alerta tipo="erro">{erro}</Alerta>
+      <Alerta tipo="info">{aviso}</Alerta>
+      {pronto && (
+        <div className="alerta ok" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          PDF pronto para enviar.
+          <button className="btn-whats" onClick={() => enviarArquivo(pronto.arquivo, pronto.texto)}><IconeWhats /> Enviar no WhatsApp</button>
+        </div>
+      )}
       <div className="grade grade-2">
         <div className="card">
           <h2>1. Período</h2>
@@ -135,19 +225,26 @@ export default function Relatorios() {
         <button className="btn-perigo" onClick={gerar} disabled={gerando} style={{ padding: '11px 22px' }}>
           {gerando ? 'Gerando…' : '📄 Gerar PDF'}
         </button>
+        {botaoWhats({ style: { padding: '11px 22px' } })}
       </div>
+      <p className="muted small" style={{ marginTop: 8 }}>
+        {ehCelular()
+          ? 'No celular, o PDF vai direto para o WhatsApp: é só escolher o grupo.'
+          : 'No computador, o PDF é baixado e o WhatsApp Web abre com o resumo pronto: escolha o grupo e anexe o PDF.'}
+        {' '}Mensalidades aparecem sem o nome do casal.
+      </p>
 
       {visualizar && periodoOk && (
         <div ref={refPrevia} style={{ scrollMarginTop: 16, marginTop: 24 }}>
           <Previa config={config} lancamentos={lancamentos} categorias={categorias} de={de} ate={ate} secoes={secoes}
-            gerando={gerando} aoGerar={gerar} aoFechar={() => setVisualizar(false)} />
+            gerando={gerando} aoGerar={gerar} aoFechar={() => setVisualizar(false)} botaoWhats={botaoWhats} />
         </div>
       )}
     </>
   )
 }
 
-function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoGerar, aoFechar }) {
+function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoGerar, aoFechar, botaoWhats }) {
   const saldoIni = Number(config?.saldo_inicial || 0)
   const P = useMemo(() => dadosPeriodo(lancamentos, saldoIni, de, ate), [lancamentos, saldoIni, de, ate])
   const fluxo = useMemo(() => {
@@ -166,6 +263,7 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
         </div>
         <div className="acoes">
           <button className="btn-perigo" onClick={aoGerar} disabled={gerando}>{gerando ? 'Gerando…' : '📄 Gerar PDF deste relatório'}</button>
+          {botaoWhats()}
           <button onClick={aoFechar}>Fechar</button>
         </div>
       </div>
@@ -289,8 +387,17 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
         <button className="btn-perigo" onClick={aoGerar} disabled={gerando} style={{ padding: '11px 22px' }}>
           {gerando ? 'Gerando…' : '📄 Gerar PDF deste relatório'}
         </button>
+        {botaoWhats({ style: { padding: '11px 22px' } })}
       </div>
     </div>
+  )
+}
+
+function IconeWhats() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="M12 2a9.9 9.9 0 0 0-8.5 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3a.5.5 0 0 0 0-.5l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c0-.1-.2-.2-.4-.3Z" />
+    </svg>
   )
 }
 
