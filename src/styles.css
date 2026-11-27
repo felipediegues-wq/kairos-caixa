@@ -337,3 +337,6 @@ input::placeholder, textarea::placeholder { text-transform: none; }
 
 .btn-whats { background: #25d366; border-color: #1ebe5b; color: #fff; }
 .btn-whats:hover { filter: brightness(0.95); }
+
+/* mensagem do WhatsApp: mantém maiúsculas e minúsculas como digitado */
+textarea.sem-caixa-alta { text-transform: none; }

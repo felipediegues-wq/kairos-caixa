@@ -2,7 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, mensagemErro } from '../lib/supabase'
 import { useDados } from '../context/DadosContext'
 import { useAuth } from '../context/AuthContext'
-import { Alerta, Carregando, Kpi, CORES } from '../components/ui'
+import { Alerta, Carregando, Kpi, CORES, Modal } from '../components/ui'
+import { valorMensalidade } from '../lib/relatorios'
 import { brl, num, rotuloMes, rotuloMesLongo, chaveMes, hojeISO, FUNCOES } from '../lib/format'
 
 // Agrupa as linhas (casal x mês) vindas do banco
@@ -28,7 +29,8 @@ function agrupar(linhas) {
 
 export default function Mensalidades() {
   const { podeVerDevedores } = useAuth()
-  const { config, valoresMensalidade, carregando } = useDados()
+  const { config, valoresMensalidade, casais: cadastroCasais, carregando } = useDados()
+  const [lembrete, setLembrete] = useState(null) // { tipo: 'grupo' } | { tipo: 'casal', casal }
   const [ate, setAte] = useState(chaveMes(hojeISO()))
   const [linhas, setLinhas] = useState(null)
   const [erro, setErro] = useState('')
@@ -94,6 +96,7 @@ export default function Mensalidades() {
             Considerar até
             <input type="month" value={ate} onChange={(e) => e.target.value && setAte(e.target.value)} />
           </label>
+          <button className="btn-whats" onClick={() => setLembrete({ tipo: 'grupo' })} disabled={!linhas}><IconeWhats /> Lembrete para o grupo</button>
           <button className="btn-perigo" onClick={gerarPDF} disabled={gerando || !linhas}>{gerando ? 'Gerando…' : '📄 Gerar PDF'}</button>
         </div>
       </div>
@@ -150,7 +153,14 @@ export default function Mensalidades() {
                     </td>
                     <td className="right nowrap">{brl(c.pago)}</td>
                     <td className={`right nowrap ${c.falta > 0.004 ? 'neg' : ''}`}><b>{brl(c.falta)}</b></td>
-                    <td className="right"><button className="btn-link" onClick={() => setAberto(aberto === c.id ? null : c.id)}>{aberto === c.id ? 'Fechar' : 'Detalhar'}</button></td>
+                    <td className="right nowrap">
+                      {c.falta > 0.004 && (
+                        <button className="btn-link" style={{ color: '#1a9e4b' }} onClick={() => setLembrete({ tipo: 'casal', casal: c })} title="Enviar lembrete para este casal">
+                          <IconeWhats /> Lembrar
+                        </button>
+                      )}
+                      <button className="btn-link" onClick={() => setAberto(aberto === c.id ? null : c.id)}>{aberto === c.id ? 'Fechar' : 'Detalhar'}</button>
+                    </td>
                   </tr>,
                   aberto === c.id && (
                     <tr key={c.id + 'd'}>
@@ -175,6 +185,16 @@ export default function Mensalidades() {
               </tbody>
             </table>
           </div>
+          {lembrete && (
+            <Lembrete
+              dados={lembrete}
+              grupo={config?.nome_grupo || 'Grupo'}
+              mes={ate}
+              valorMes={valorMensalidade(valoresMensalidade, ate + '-01')}
+              telefone={lembrete.casal ? cadastroCasais.find((x) => x.id === lembrete.casal.id)?.telefone : null}
+              aoFechar={() => setLembrete(null)}
+            />
+          )}
           <p className="muted small">
             Cada casal paga a partir do mês em que entrou no grupo (cadastro de Casais) até o mês escolhido acima, ou até o mês de saída.
             Pagamentos são lançados em Lançamentos com a categoria de mensalidade, escolhendo o casal e os meses pagos.
@@ -182,5 +202,98 @@ export default function Mensalidades() {
         </>
       )}
     </>
+  )
+}
+
+// Número para o link do WhatsApp (Brasil): só dígitos, com 55 na frente
+function numeroWhats(tel) {
+  const d = String(tel || '').replace(/\D/g, '')
+  if (d.length === 10 || d.length === 11) return '55' + d
+  if ((d.length === 12 || d.length === 13) && d.startsWith('55')) return d
+  return null
+}
+
+// "DIEGO E ANA" -> "Diego e Ana" (só na mensagem; o cadastro continua em maiúsculas)
+const MINUSCULAS = new Set(['e', 'de', 'da', 'do', 'das', 'dos'])
+function nomeBonito(txt) {
+  return String(txt || '')
+    .toLocaleLowerCase('pt-BR')
+    .split(/(\s+)/)
+    .map((p, i) => (i > 0 && MINUSCULAS.has(p) ? p : p.charAt(0).toLocaleUpperCase('pt-BR') + p.slice(1)))
+    .join('')
+}
+
+function textoGrupo(grupo, mes, valor) {
+  return [
+    `*${nomeBonito(grupo)} – Lembrete de mensalidade*`,
+    '',
+    'Queridos casais, a paz de Cristo! 🙏',
+    `Lembramos que a mensalidade de *${rotuloMesLongo(mes)}*${valor > 0 ? ` é de *${brl(valor)}*` : ' já está aberta'}.`,
+    'Quem ainda não acertou, por favor procure o casal financeiro.',
+    '',
+    'Obrigado e Deus abençoe!',
+  ].join('\n')
+}
+
+function textoCasal(grupo, c) {
+  const meses = c.emAberto.map((m) => `• ${rotuloMesLongo(m.mes)}: ${brl(m.falta)}${m.parcial ? ' (restante)' : ''}`)
+  return [
+    `*${nomeBonito(grupo)} – Lembrete de mensalidade*`,
+    '',
+    `Olá, ${nomeBonito(c.nome)}! A paz de Cristo! 🙏`,
+    'Passando para lembrar das mensalidades em aberto:',
+    ...meses,
+    `*Total: ${brl(c.falta)}*`,
+    '',
+    'Se já pagou, desconsidere esta mensagem e nos avise para atualizarmos. Obrigado!',
+  ].join('\n')
+}
+
+function Lembrete({ dados, grupo, mes, valorMes, telefone, aoFechar }) {
+  const paraGrupo = dados.tipo === 'grupo'
+  const [texto, setTexto] = useState(() => (paraGrupo ? textoGrupo(grupo, mes, valorMes) : textoCasal(grupo, dados.casal)))
+  const [copiado, setCopiado] = useState(false)
+  const numero = paraGrupo ? null : numeroWhats(telefone)
+
+  function abrirWhats() {
+    const url = (numero ? `https://wa.me/${numero}` : 'https://wa.me/') + '?text=' + encodeURIComponent(texto)
+    window.open(url, '_blank', 'noopener')
+  }
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(texto)
+      setCopiado(true)
+      setTimeout(() => setCopiado(false), 2500)
+    } catch {
+      window.prompt('Copie o texto:', texto)
+    }
+  }
+
+  return (
+    <Modal titulo={paraGrupo ? 'Lembrete para o grupo' : `Lembrete para ${dados.casal.nome}`} aoFechar={aoFechar} largura={560}
+      rodape={
+        <>
+          <button onClick={copiar}>{copiado ? '✓ Copiado' : 'Copiar texto'}</button>
+          <button className="btn-whats" onClick={abrirWhats}><IconeWhats /> {numero ? 'Abrir conversa do casal' : 'Abrir no WhatsApp'}</button>
+        </>
+      }>
+      <p className="muted small" style={{ marginTop: 0 }}>
+        {paraGrupo
+          ? 'Mensagem geral, sem nomes. Ao abrir o WhatsApp, escolha o grupo e envie.'
+          : numero
+            ? `O WhatsApp abre direto na conversa com o casal, no número ${telefone}.`
+            : 'Este casal não tem telefone cadastrado: ao abrir o WhatsApp, escolha a conversa. Dica: cadastre o telefone em Casais.'}
+        {' '}Você pode ajustar o texto abaixo.
+      </p>
+      <textarea className="sem-caixa-alta" rows={paraGrupo ? 9 : 11} value={texto} onChange={(e) => setTexto(e.target.value)} style={{ width: '100%', fontFamily: 'inherit' }} />
+    </Modal>
+  )
+}
+
+function IconeWhats() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor" style={{ verticalAlign: '-3px' }}>
+      <path d="M12 2a9.9 9.9 0 0 0-8.5 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3a.5.5 0 0 0 0-.5l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c0-.1-.2-.2-.4-.3Z" />
+    </svg>
   )
 }
