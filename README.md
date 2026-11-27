@@ -45,7 +45,7 @@ O Kairós **pode usar o mesmo projeto Supabase de outro sistema** (ex.: o das A�
 1. **SQL Editor** → **New query** → cole todo o conteúdo de [`supabase/schema.sql`](supabase/schema.sql) → **Run**. Deve aparecer “Success”. (Pode rodar de novo no futuro sem perder dados.)
 2. **Project Settings → Data API** (ou **API**) → em **Exposed schemas**, **adicione `caixa`** (mantenha os que já estão, como `public`) → **Save**.
 
-3. Rode também [`supabase/002_casais_mensalidades.sql`](supabase/002_casais_mensalidades.sql) (casais, mensalidades e relatório de devedores), do mesmo jeito.
+3. Rode também, nesta ordem, [`supabase/002_casais_mensalidades.sql`](supabase/002_casais_mensalidades.sql) (casais, mensalidades e devedores) e [`supabase/003_caixa_alta.sql`](supabase/003_caixa_alta.sql) (textos sempre em maiúsculas).
 
 > Sem o passo 2.2 o site mostra o erro “schema caixa não está liberado”.
 
@@ -113,6 +113,7 @@ npm run dev                  # abre em http://localhost:5173
 ```
 supabase/schema.sql      schema "caixa": tabelas, permissões (RLS), auditoria e dados iniciais
 supabase/002_*.sql       casais, mensalidades e relatório de devedores
+supabase/003_*.sql       textos sempre em CAIXA ALTA (exceto e-mails)
 src/lib/                 conexão com o Supabase, formatação, cálculos e gerador de PDF
 src/context/             login/perfil e carregamento dos dados
 src/pages/               uma tela por arquivo

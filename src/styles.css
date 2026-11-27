@@ -324,3 +324,8 @@ table.tabela { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 }
 .qr-box { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
 .qr-box canvas, .qr-box img { background: #fff; padding: 8px; border-radius: 8px; border: 1px solid var(--borda); }
+
+/* textos sempre em CAIXA ALTA (o banco também grava em maiúsculas) */
+input:not([type='email']):not([type='password']):not([type='date']):not([type='month']):not([type='number']):not([type='checkbox']),
+textarea { text-transform: uppercase; }
+input::placeholder, textarea::placeholder { text-transform: none; }
