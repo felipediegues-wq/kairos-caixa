@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { Alerta, Carregando, Kpi, CORES } from '../components/ui'
 import { TabelaFluxo } from './Fluxo'
 import { hojeISO, inicioMesISO, fimMesISO, somarMeses, dataBR, brl, num, pct, compacto, rotuloMes, rotuloMesLongo } from '../lib/format'
-import { dadosPeriodo, matrizFluxo, resumoMensal } from '../lib/relatorios'
+import { dadosPeriodo, matrizFluxo, resumoMensal, descricaoPublica } from '../lib/relatorios'
 
 const ATALHOS = [
   ['Este mês', () => [inicioMesISO(), fimMesISO()]],
@@ -266,7 +266,7 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
                     <td className="nowrap">{dataBR(l.data)}</td>
                     <td><span className={`tag ${l.tipo}`}>{l.tipo}</span></td>
                     <td>{l.categoria?.nome}</td>
-                    <td>{l.descricao}</td>
+                    <td>{descricaoPublica(l)}</td>
                     <td>{l.forma?.nome}</td>
                     <td className={`right nowrap ${l.tipo === 'Entrada' ? 'pos' : 'neg'}`}>{l.tipo === 'Entrada' ? '' : '−'}{brl(l.valor)}</td>
                     <td className="right nowrap"><b>{brl(l.saldo)}</b></td>

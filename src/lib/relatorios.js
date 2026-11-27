@@ -1,4 +1,4 @@
-import { chaveMes, somarMeses } from './format'
+import { chaveMes, somarMeses, rotuloMes } from './format'
 
 // Valor com sinal: entradas somam, saídas e retiradas subtraem
 export const comSinal = (l) => (l.tipo === 'Entrada' ? Number(l.valor) : -Number(l.valor))
@@ -138,4 +138,12 @@ export function pagoPorMes(lancamentos, casalId, ignorarId) {
     m.set(k, (m.get(k) || 0) + Number(l.valor))
   }
   return m
+}
+
+// Descrição que pode ir para o grupo: mensalidade nunca mostra o nome do casal
+export function descricaoPublica(l) {
+  if (l.casal_id || l.categoria?.mensalidade) {
+    return l.competencia ? `MENSALIDADE REF. ${rotuloMes(chaveMes(l.competencia)).toUpperCase()}` : 'MENSALIDADE'
+  }
+  return l.descricao
 }

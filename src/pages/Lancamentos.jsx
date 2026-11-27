@@ -282,7 +282,7 @@ function FormLancamento({ inicial, categorias, formas, casais, valoresMensalidad
         tipo: f.tipo,
         categoria_id: Number(f.categoria_id),
         forma_id: f.forma_id ? Number(f.forma_id) : null,
-        descricao: f.descricao.trim() || `Mensalidade ${rotuloMes(k)} – ${casal?.nome || ''}`,
+        descricao: f.descricao.trim() || `Mensalidade ${rotuloMes(k)}`,
         valor: Math.round(vals[i] * 100) / 100,
         observacao: f.observacao.trim() || null,
         casal_id: Number(f.casal_id),

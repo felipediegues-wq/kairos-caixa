@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { brl, num, pct, dataBR, rotuloMes, rotuloMesLongo, chaveMes, somarMeses, inicioMesISO } from './format'
-import { resumoMensal, matrizFluxo, dadosPeriodo } from './relatorios'
+import { resumoMensal, matrizFluxo, dadosPeriodo, descricaoPublica } from './relatorios'
 
 const AZUL = [29, 29, 31] // preto do medalhão
 const OURO = [212, 160, 23]
@@ -180,7 +180,7 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
       startY: y,
       head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Forma', 'Valor', 'Saldo']],
       body: lista.length
-        ? lista.map((l) => [dataBR(l.data), l.tipo, l.categoria?.nome || '', l.descricao, l.forma?.nome || '', (l.tipo === 'Entrada' ? '' : '-') + num(l.valor), num(l.saldo)])
+        ? lista.map((l) => [dataBR(l.data), l.tipo, l.categoria?.nome || '', descricaoPublica(l), l.forma?.nome || '', (l.tipo === 'Entrada' ? '' : '-') + num(l.valor), num(l.saldo)])
         : [['', '', '', 'Sem lançamentos no período', '', '', '']],
       styles: { ...estiloTabela.styles, fontSize: 7.8 },
       columnStyles: { 0: { cellWidth: 17 }, 1: { cellWidth: 16 }, 3: { cellWidth: 'auto' }, 5: { halign: 'right', cellWidth: 22 }, 6: { halign: 'right', cellWidth: 22, fontStyle: 'bold' } },
