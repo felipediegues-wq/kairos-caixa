@@ -31,11 +31,11 @@ export function Modal({ titulo, aoFechar, children, rodape, largura }) {
   )
 }
 
-export function Kpi({ rotulo, valor, sub, cor }) {
+export function Kpi({ rotulo, valor, sub, cor, texto }) {
   return (
     <div className="kpi" style={{ '--cor': cor }}>
       <div className="rot">{rotulo}</div>
-      <div className="val">{valor}</div>
+      <div className={`val${texto ? ' texto' : ''}`} title={typeof valor === 'string' ? valor : undefined}>{valor}</div>
       {sub && <div className="sub">{sub}</div>}
     </div>
   )

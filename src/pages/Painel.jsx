@@ -8,7 +8,7 @@ import { useDados } from '../context/DadosContext'
 import { useAuth } from '../context/AuthContext'
 import { Kpi, Carregando, CORES, PALETA } from '../components/ui'
 import { brl, compacto, dataBR, rotuloMes, rotuloMesLongo, chaveMes, hojeISO, pct, somarMeses } from '../lib/format'
-import { totais, resumoMensal, gastosPor, ordenar } from '../lib/relatorios'
+import { totais, resumoMensal, gastosPor, somaPor, ordenar } from '../lib/relatorios'
 
 const dica = (v) => brl(v)
 
@@ -37,7 +37,8 @@ export default function Painel() {
 
   const doMes = useMemo(() => lancamentos.filter((l) => chaveMes(l.data) === mesRef), [lancamentos, mesRef])
   const resMes = useMemo(() => resumoMensal(lancamentos, saldoIni, mesRef + '-01', 1)[0], [lancamentos, saldoIni, mesRef])
-  const catMes = useMemo(() => gastosPor(doMes, (l) => l.categoria?.nome), [doMes])
+  // maior gasto = só saídas (retiradas têm cartão próprio)
+  const catMes = useMemo(() => somaPor(doMes, (l) => l.categoria?.nome, (l) => l.tipo === 'Saída'), [doMes])
   const catPeriodo = useMemo(() => gastosPor(lancamentos, (l) => l.categoria?.nome), [lancamentos])
   const formas = useMemo(() => gastosPor(lancamentos, (l) => l.forma?.nome), [lancamentos])
   const ultimos = useMemo(() => ordenar(lancamentos).slice(-6).reverse(), [lancamentos])
@@ -84,7 +85,7 @@ export default function Painel() {
           <Kpi rotulo="Retiradas do mês" valor={brl(resMes.retiradas)} cor={CORES.roxo} />
           <Kpi rotulo="Resultado do mês" valor={brl(resMes.resultado)} cor={resMes.resultado < 0 ? CORES.vermelho : CORES.azul} />
           <Kpi rotulo="Saldo no fim do mês" valor={brl(resMes.saldoFinal)} cor={CORES.azul} />
-          <Kpi rotulo="Maior gasto" valor={maior ? maior.nome : '—'} sub={maior ? `${brl(maior.valor)} · ${pct(maior.pct)}` : 'sem gastos no mês'} cor={CORES.laranja} />
+          <Kpi rotulo="Maior gasto do mês" texto valor={maior ? maior.nome : '—'} sub={maior ? `${brl(maior.valor)} · ${pct(maior.pct)} das saídas` : 'sem saídas no mês'} cor={CORES.laranja} />
         </div>
       </div>
 
