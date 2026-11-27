@@ -1,6 +1,6 @@
 import { chaveMes, somarMeses, rotuloMes } from './format'
 
-// Valor com sinal: entradas somam, saídas e retiradas subtraem
+// Valor com sinal: entradas somam, saídas subtraem
 export const comSinal = (l) => (l.tipo === 'Entrada' ? Number(l.valor) : -Number(l.valor))
 
 export function ordenar(lancs) {
@@ -9,14 +9,13 @@ export function ordenar(lancs) {
 
 // Totais de um conjunto de lançamentos
 export function totais(lancs) {
-  const t = { entradas: 0, saidas: 0, retiradas: 0, qtd: lancs.length }
+  const t = { entradas: 0, saidas: 0, qtd: lancs.length }
   for (const l of lancs) {
     const v = Number(l.valor)
     if (l.tipo === 'Entrada') t.entradas += v
-    else if (l.tipo === 'Saída') t.saidas += v
-    else t.retiradas += v
+    else t.saidas += v // qualquer outro tipo (inclusive "Retirada" antiga) conta como saída
   }
-  t.resultado = t.entradas - t.saidas - t.retiradas
+  t.resultado = t.entradas - t.saidas
   return t
 }
 
@@ -72,9 +71,9 @@ export function matrizFluxo(lancs, categorias, inicioISO, qtd = 12) {
     linha.total += Number(l.valor)
   }
   const porTipo = {}
-  for (const tipo of ['Entrada', 'Saída', 'Retirada']) {
+  for (const tipo of ['Entrada', 'Saída']) {
     const ls = [...linhas.values()]
-      .filter((x) => x.categoria.tipo === tipo && (x.categoria.ativo !== false || x.total > 0))
+      .filter((x) => (x.categoria.tipo === 'Entrada' ? 'Entrada' : 'Saída') === tipo && (x.categoria.ativo !== false || x.total > 0))
       .sort((a, b) => (a.categoria.ordem ?? 0) - (b.categoria.ordem ?? 0) || a.categoria.nome.localeCompare(b.categoria.nome))
     const tot = Array(qtd).fill(0)
     ls.forEach((x) => x.valores.forEach((v, i) => (tot[i] += v)))
@@ -97,7 +96,7 @@ export function somaPor(lancs, chave, filtro = () => true) {
     .sort((a, b) => b.valor - a.valor)
 }
 
-// Só saídas e retiradas
+// Só saídas
 export const gastosPor = (lancs, chave) => somaPor(lancs, chave, (l) => l.tipo !== 'Entrada')
 
 // Tudo o que o relatório de um período precisa (usado na tela e no PDF)
@@ -147,3 +146,6 @@ export function descricaoPublica(l) {
   }
   return l.descricao
 }
+
+// Só existem Entrada e Saída (uma "Retirada" antiga aparece como Saída)
+export const tipoDe = (l) => (l.tipo === 'Entrada' ? 'Entrada' : 'Saída')

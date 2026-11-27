@@ -62,7 +62,7 @@ export const PAPEIS = {
   tesoureiro: 'Tesoureiro',
   leitura: 'Leitura',
 }
-export const TIPOS = ['Entrada', 'Saída', 'Retirada']
+export const TIPOS = ['Entrada', 'Saída']
 
 export const FUNCOES = {
   coordenador: 'Casal coordenador',

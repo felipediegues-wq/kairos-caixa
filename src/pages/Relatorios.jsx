@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { Alerta, Carregando, Kpi, CORES } from '../components/ui'
 import { TabelaFluxo } from './Fluxo'
 import { hojeISO, inicioMesISO, fimMesISO, somarMeses, dataBR, brl, num, pct, compacto, rotuloMes, rotuloMesLongo } from '../lib/format'
-import { dadosPeriodo, matrizFluxo, resumoMensal, descricaoPublica } from '../lib/relatorios'
+import { dadosPeriodo, matrizFluxo, resumoMensal, descricaoPublica, tipoDe } from '../lib/relatorios'
 
 const ATALHOS = [
   ['Este mês', () => [inicioMesISO(), fimMesISO()]],
@@ -177,7 +177,6 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
             <Kpi rotulo="Saldo no início" valor={brl(P.saldoNoInicio)} cor={CORES.azul} />
             <Kpi rotulo="Entradas" valor={brl(t.entradas)} cor={CORES.verde} />
             <Kpi rotulo="Saídas" valor={brl(t.saidas)} cor={CORES.vermelho} />
-            <Kpi rotulo="Retiradas" valor={brl(t.retiradas)} cor={CORES.roxo} />
             <Kpi rotulo="Resultado" valor={brl(t.resultado)} cor={t.resultado < 0 ? CORES.vermelho : CORES.azul} />
             <Kpi rotulo="Saldo no fim" valor={brl(P.saldoNoFim)} cor={CORES.azul} />
           </div>
@@ -186,9 +185,9 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
 
       {secoes.grafico && (
         <section className="card">
-          <h2>Entradas x saídas x retiradas por mês</h2>
+          <h2>Entradas x saídas por mês</h2>
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={mensal.map((m) => ({ mes: rotuloMes(m.mes), Entradas: m.entradas, Saídas: m.saidas, Retiradas: m.retiradas }))}
+            <BarChart data={mensal.map((m) => ({ mes: rotuloMes(m.mes), Entradas: m.entradas, Saídas: m.saidas }))}
               margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8ecf2" />
               <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
@@ -197,7 +196,6 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
               <Legend />
               <Bar dataKey="Entradas" fill={CORES.verde} radius={[4, 4, 0, 0]} maxBarSize={36} />
               <Bar dataKey="Saídas" fill={CORES.vermelho} radius={[4, 4, 0, 0]} maxBarSize={36} />
-              <Bar dataKey="Retiradas" fill={CORES.roxo} radius={[4, 4, 0, 0]} maxBarSize={36} />
             </BarChart>
           </ResponsiveContainer>
         </section>
@@ -210,7 +208,7 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
             <table className="tabela">
               <thead>
                 <tr><th>Mês</th><th className="right">Saldo inicial</th><th className="right">Entradas</th><th className="right">Saídas</th>
-                  <th className="right">Retiradas</th><th className="right">Resultado</th><th className="right">Saldo final</th></tr>
+                  <th className="right">Resultado</th><th className="right">Saldo final</th></tr>
               </thead>
               <tbody>
                 {mensal.map((m) => (
@@ -219,7 +217,6 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
                     <td className="right nowrap">{num(m.saldoInicial)}</td>
                     <td className="right nowrap pos">{num(m.entradas)}</td>
                     <td className="right nowrap neg">{num(m.saidas)}</td>
-                    <td className="right nowrap">{num(m.retiradas)}</td>
                     <td className={`right nowrap ${m.resultado < 0 ? 'neg' : ''}`}>{num(m.resultado)}</td>
                     <td className="right nowrap"><b>{num(m.saldoFinal)}</b></td>
                   </tr>
@@ -230,7 +227,6 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
                   <td>Total</td><td></td>
                   <td className="right nowrap">{num(mensal.reduce((a, m) => a + m.entradas, 0))}</td>
                   <td className="right nowrap">{num(mensal.reduce((a, m) => a + m.saidas, 0))}</td>
-                  <td className="right nowrap">{num(mensal.reduce((a, m) => a + m.retiradas, 0))}</td>
                   <td className="right nowrap">{num(mensal.reduce((a, m) => a + m.resultado, 0))}</td>
                   <td className="right nowrap">{num(mensal.at(-1).saldoFinal)}</td>
                 </tr>
@@ -243,10 +239,10 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
 
       {secoes.categorias && (
         <section className="card">
-          <h2>Entradas e gastos por categoria</h2>
+          <h2>Entradas e saídas por categoria</h2>
           <div className="grade grade-2">
             <TabelaCategorias titulo="Entradas" itens={P.entradasPorCategoria} cor={CORES.verde} />
-            <TabelaCategorias titulo="Saídas e retiradas" itens={P.gastosPorCategoria} cor={CORES.vermelho} />
+            <TabelaCategorias titulo="Saídas" itens={P.gastosPorCategoria} cor={CORES.vermelho} />
           </div>
         </section>
       )}
@@ -264,7 +260,7 @@ function Previa({ config, lancamentos, categorias, de, ate, secoes, gerando, aoG
                 {P.lista.map((l) => (
                   <tr key={l.id}>
                     <td className="nowrap">{dataBR(l.data)}</td>
-                    <td><span className={`tag ${l.tipo}`}>{l.tipo}</span></td>
+                    <td><span className={`tag ${tipoDe(l)}`}>{tipoDe(l)}</span></td>
                     <td>{l.categoria?.nome}</td>
                     <td>{descricaoPublica(l)}</td>
                     <td>{l.forma?.nome}</td>

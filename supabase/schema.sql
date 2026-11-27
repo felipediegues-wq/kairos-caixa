@@ -39,7 +39,7 @@ create table if not exists caixa.configuracoes (
 
 create table if not exists caixa.categorias (
   id      bigint generated always as identity primary key,
-  tipo    text not null check (tipo in ('Entrada', 'Saída', 'Retirada')),
+  tipo    text not null check (tipo in ('Entrada', 'Saída')),
   nome    text not null check (length(trim(nome)) > 0),
   ativo   boolean not null default true,
   ordem   int not null default 0,
@@ -56,7 +56,7 @@ create table if not exists caixa.formas_pagamento (
 create table if not exists caixa.lancamentos (
   id             bigint generated always as identity primary key,
   data           date not null,
-  tipo           text not null check (tipo in ('Entrada', 'Saída', 'Retirada')),
+  tipo           text not null check (tipo in ('Entrada', 'Saída')),
   categoria_id   bigint not null references caixa.categorias (id),
   forma_id       bigint references caixa.formas_pagamento (id),
   descricao      text not null check (length(trim(descricao)) > 0),
@@ -344,9 +344,9 @@ insert into caixa.categorias (tipo, nome, ordem) values
   ('Saída', 'Comunicação e impressos', 7),
   ('Saída', 'Taxas bancárias', 8),
   ('Saída', 'Outros gastos', 9),
-  ('Retirada', 'Saque em dinheiro', 1),
-  ('Retirada', 'Repasse', 2),
-  ('Retirada', 'Reembolso', 3)
+  ('Saída', 'Saque em dinheiro', 10),
+  ('Saída', 'Repasse', 11),
+  ('Saída', 'Reembolso', 12)
 on conflict (tipo, nome) do nothing;
 
 insert into caixa.formas_pagamento (nome, ordem) values

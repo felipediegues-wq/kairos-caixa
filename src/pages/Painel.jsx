@@ -8,7 +8,7 @@ import { useDados } from '../context/DadosContext'
 import { useAuth } from '../context/AuthContext'
 import { Kpi, Carregando, CORES, PALETA } from '../components/ui'
 import { brl, compacto, dataBR, rotuloMes, rotuloMesLongo, chaveMes, hojeISO, pct, somarMeses } from '../lib/format'
-import { totais, resumoMensal, gastosPor, ordenar } from '../lib/relatorios'
+import { totais, resumoMensal, gastosPor, ordenar, tipoDe } from '../lib/relatorios'
 
 const dica = (v) => brl(v)
 
@@ -37,7 +37,7 @@ export default function Painel() {
 
   const doMes = useMemo(() => lancamentos.filter((l) => chaveMes(l.data) === mesRef), [lancamentos, mesRef])
   const resMes = useMemo(() => resumoMensal(lancamentos, saldoIni, mesRef + '-01', 1)[0], [lancamentos, saldoIni, mesRef])
-  // maior gasto = saídas + retiradas
+  // maior gasto do mês (saídas)
   const catMes = useMemo(() => gastosPor(doMes, (l) => l.categoria?.nome), [doMes])
   const catPeriodo = useMemo(() => gastosPor(lancamentos, (l) => l.categoria?.nome), [lancamentos])
   const formas = useMemo(() => gastosPor(lancamentos, (l) => l.forma?.nome), [lancamentos])
@@ -46,7 +46,7 @@ export default function Painel() {
   if (carregando) return <Carregando />
 
   const dadosMensais = mensal.map((m) => ({
-    mes: rotuloMes(m.mes), Entradas: m.entradas, Saídas: m.saidas, Retiradas: m.retiradas, Saldo: m.saldoFinal,
+    mes: rotuloMes(m.mes), Entradas: m.entradas, Saídas: m.saidas, Saldo: m.saldoFinal,
   }))
   const maior = catMes[0]
 
@@ -66,7 +66,6 @@ export default function Painel() {
         <Kpi rotulo="Saldo atual" valor={brl(saldoIni + geral.resultado)} cor={CORES.azul} sub={`Saldo inicial ${brl(saldoIni)}`} />
         <Kpi rotulo="Total de entradas" valor={brl(geral.entradas)} cor={CORES.verde} />
         <Kpi rotulo="Total de saídas" valor={brl(geral.saidas)} cor={CORES.vermelho} />
-        <Kpi rotulo="Total de retiradas" valor={brl(geral.retiradas)} cor={CORES.roxo} />
         <Kpi rotulo="Lançamentos" valor={geral.qtd} cor={CORES.azul2} />
       </div>
 
@@ -82,16 +81,15 @@ export default function Painel() {
         <div className="grade grade-kpi">
           <Kpi rotulo="Entradas do mês" valor={brl(resMes.entradas)} cor={CORES.verde} />
           <Kpi rotulo="Saídas do mês" valor={brl(resMes.saidas)} cor={CORES.vermelho} />
-          <Kpi rotulo="Retiradas do mês" valor={brl(resMes.retiradas)} cor={CORES.roxo} />
           <Kpi rotulo="Resultado do mês" valor={brl(resMes.resultado)} cor={resMes.resultado < 0 ? CORES.vermelho : CORES.azul} />
           <Kpi rotulo="Saldo no fim do mês" valor={brl(resMes.saldoFinal)} cor={CORES.azul} />
-          <Kpi rotulo="Maior gasto do mês" texto valor={maior ? maior.nome : '—'} sub={maior ? `${brl(maior.valor)} · ${pct(maior.pct)} das saídas e retiradas` : 'sem saídas no mês'} cor={CORES.laranja} />
+          <Kpi rotulo="Maior gasto do mês" texto valor={maior ? maior.nome : '—'} sub={maior ? `${brl(maior.valor)} · ${pct(maior.pct)} das saídas` : 'sem saídas no mês'} cor={CORES.laranja} />
         </div>
       </div>
 
       <div className="grade grade-2" style={{ marginTop: 16 }}>
         <div className="card">
-          <h2>Entradas x saídas x retiradas por mês</h2>
+          <h2>Entradas x saídas por mês</h2>
           <ResponsiveContainer width="100%" height={290}>
             <BarChart data={dadosMensais} margin={{ top: 8, right: 8, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e8ecf2" />
@@ -101,7 +99,6 @@ export default function Painel() {
               <Legend />
               <Bar dataKey="Entradas" fill={CORES.verde} radius={[4, 4, 0, 0]} />
               <Bar dataKey="Saídas" fill={CORES.vermelho} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Retiradas" fill={CORES.roxo} radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -167,7 +164,7 @@ export default function Painel() {
                 {ultimos.map((l) => (
                   <tr key={l.id}>
                     <td className="nowrap">{dataBR(l.data)}</td>
-                    <td><span className={`tag ${l.tipo}`}>{l.tipo}</span></td>
+                    <td><span className={`tag ${tipoDe(l)}`}>{tipoDe(l)}</span></td>
                     <td>{l.descricao}<div className="muted small">{l.categoria?.nome}</div></td>
                     <td className={`right nowrap ${l.tipo === 'Entrada' ? 'pos' : 'neg'}`}>
                       {l.tipo === 'Entrada' ? '+' : '−'} {brl(l.valor)}

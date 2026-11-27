@@ -1,7 +1,7 @@
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { brl, num, pct, dataBR, rotuloMes, rotuloMesLongo, chaveMes, somarMeses, inicioMesISO } from './format'
-import { resumoMensal, matrizFluxo, dadosPeriodo, descricaoPublica } from './relatorios'
+import { resumoMensal, matrizFluxo, dadosPeriodo, descricaoPublica, tipoDe } from './relatorios'
 
 const AZUL = [29, 29, 31] // preto do medalhão
 const OURO = [212, 160, 23]
@@ -95,7 +95,6 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
       ['Saldo no início', brl(saldoAntes), AZUL],
       ['Entradas', brl(t.entradas), VERDE],
       ['Saídas', brl(t.saidas), VERMELHO],
-      ['Retiradas', brl(t.retiradas), ROXO],
       ['Resultado', brl(t.resultado), t.resultado < 0 ? VERMELHO : AZUL],
       ['Saldo no fim', brl(saldoFim), AZUL],
     ]
@@ -121,7 +120,7 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
   // ---- 2. gráfico mensal ----
   if (secoes.grafico && mensal.length) {
     y = garantirEspaco(y, 75)
-    y = titulo('Entradas x saídas x retiradas por mês', y)
+    y = titulo('Entradas x saídas por mês', y)
     y = graficoBarras(doc, mensal, 12, y + 2, doc.internal.pageSize.getWidth() - 24, 60) + 6
   }
 
@@ -132,14 +131,14 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
     autoTable(doc, {
       ...estiloTabela,
       startY: y,
-      head: [['Mês', 'Saldo inicial', 'Entradas', 'Saídas', 'Retiradas', 'Resultado', 'Saldo final']],
-      body: mensal.map((m) => [rotuloMesLongo(m.mes), num(m.saldoInicial), num(m.entradas), num(m.saidas), num(m.retiradas), num(m.resultado), num(m.saldoFinal)]),
+      head: [['Mês', 'Saldo inicial', 'Entradas', 'Saídas', 'Resultado', 'Saldo final']],
+      body: mensal.map((m) => [rotuloMesLongo(m.mes), num(m.saldoInicial), num(m.entradas), num(m.saidas), num(m.resultado), num(m.saldoFinal)]),
       foot: [['Total', '', num(mensal.reduce((a, m) => a + m.entradas, 0)), num(mensal.reduce((a, m) => a + m.saidas, 0)),
-        num(mensal.reduce((a, m) => a + m.retiradas, 0)), num(mensal.reduce((a, m) => a + m.resultado, 0)), num(mensal.at(-1).saldoFinal)]],
+        num(mensal.reduce((a, m) => a + m.resultado, 0)), num(mensal.at(-1).saldoFinal)]],
       footStyles: { fillColor: [230, 235, 243], textColor: AZUL, fontStyle: 'bold' },
-      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right', fontStyle: 'bold' } },
+      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right', fontStyle: 'bold' } },
       didParseCell: (d) => {
-        if (d.section === 'body' && d.column.index === 5 && mensal[d.row.index]?.resultado < 0) d.cell.styles.textColor = VERMELHO
+        if (d.section === 'body' && d.column.index === 4 && mensal[d.row.index]?.resultado < 0) d.cell.styles.textColor = VERMELHO
         if (d.section !== 'body' && d.column.index > 0) d.cell.styles.halign = 'right'
       },
     })
@@ -151,10 +150,10 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
     const cats = P.gastosPorCategoria
     const ents = P.entradasPorCategoria
     y = garantirEspaco(y, 40)
-    y = titulo('Entradas e gastos por categoria', y)
+    y = titulo('Entradas e saídas por categoria', y)
     const linhas = [
       ...ents.map((c) => ['Entrada', c.nome, num(c.valor), pct(c.pct)]),
-      ...cats.map((c) => ['Saída / retirada', c.nome, num(c.valor), pct(c.pct)]),
+      ...cats.map((c) => ['Saída', c.nome, num(c.valor), pct(c.pct)]),
     ]
     autoTable(doc, {
       ...estiloTabela,
@@ -180,7 +179,7 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
       startY: y,
       head: [['Data', 'Tipo', 'Categoria', 'Descrição', 'Forma', 'Valor', 'Saldo']],
       body: lista.length
-        ? lista.map((l) => [dataBR(l.data), l.tipo, l.categoria?.nome || '', descricaoPublica(l), l.forma?.nome || '', (l.tipo === 'Entrada' ? '' : '-') + num(l.valor), num(l.saldo)])
+        ? lista.map((l) => [dataBR(l.data), tipoDe(l), l.categoria?.nome || '', descricaoPublica(l), l.forma?.nome || '', (l.tipo === 'Entrada' ? '' : '-') + num(l.valor), num(l.saldo)])
         : [['', '', '', 'Sem lançamentos no período', '', '', '']],
       styles: { ...estiloTabela.styles, fontSize: 7.8 },
       columnStyles: { 0: { cellWidth: 17 }, 1: { cellWidth: 16 }, 3: { cellWidth: 'auto' }, 5: { halign: 'right', cellWidth: 22 }, 6: { halign: 'right', cellWidth: 22, fontStyle: 'bold' } },
@@ -219,7 +218,7 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
     }
     const fmt = (v) => (Math.abs(v) < 0.005 ? '-' : num(v))
     add(['Saldo inicial do mês', ...res.map((r) => fmt(r.saldoInicial)), fmt(res[0].saldoInicial)], { fillColor: [238, 243, 250], fontStyle: 'bold' })
-    for (const [tipo, cor, nome] of [['Entrada', VERDE, 'ENTRADAS'], ['Saída', VERMELHO, 'SAÍDAS'], ['Retirada', ROXO, 'RETIRADAS']]) {
+    for (const [tipo, cor, nome] of [['Entrada', VERDE, 'ENTRADAS'], ['Saída', VERMELHO, 'SAÍDAS']]) {
       const g = m.porTipo[tipo]
       add([nome, ...Array(qtd + 1).fill('')], { fillColor: cor, textColor: 255, fontStyle: 'bold' })
       g.linhas.forEach((l) => add(['   ' + l.categoria.nome, ...l.valores.map(fmt), fmt(l.total)]))
@@ -252,7 +251,7 @@ export function gerarPDF({ config, lancamentos, categorias, opcoes }) {
 
 // Gráfico de barras agrupadas desenhado direto no PDF
 function graficoBarras(doc, mensal, x, y, w, h) {
-  const series = [['entradas', VERDE, 'Entradas'], ['saidas', VERMELHO, 'Saídas'], ['retiradas', ROXO, 'Retiradas']]
+  const series = [['entradas', VERDE, 'Entradas'], ['saidas', VERMELHO, 'Saídas']]
   const max = Math.max(1, ...mensal.flatMap((m) => series.map(([k]) => m[k])))
   const passo = Math.pow(10, Math.floor(Math.log10(max)))
   const topo = Math.ceil(max / passo) * passo
@@ -267,9 +266,9 @@ function graficoBarras(doc, mensal, x, y, w, h) {
     doc.text(v >= 1000 ? `${(v / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mil` : String(Math.round(v)), x + esq - 2, yy + 1, { align: 'right' })
   }
   const grupoW = areaW / mensal.length
-  const barW = Math.min(6, (grupoW * 0.75) / 3)
+  const barW = Math.min(7, (grupoW * 0.7) / series.length)
   mensal.forEach((m, i) => {
-    const gx = x + esq + i * grupoW + (grupoW - barW * 3) / 2
+    const gx = x + esq + i * grupoW + (grupoW - barW * series.length) / 2
     series.forEach(([k, cor], j) => {
       const bh = (areaH * m[k]) / topo
       if (bh > 0) {

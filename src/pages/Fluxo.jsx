@@ -34,9 +34,9 @@ export function TabelaFluxo({ fluxo }) {
             {resumo.map((r) => cel(r.saldoInicial, r.mes))}
             {cel(resumo[0].saldoInicial, 't')}
           </tr>
-          {['Entrada', 'Saída', 'Retirada'].map((tipo) => {
+          {['Entrada', 'Saída'].map((tipo) => {
             const g = porTipo[tipo]
-            const nome = { Entrada: 'ENTRADAS', Saída: 'SAÍDAS', Retirada: 'RETIRADAS' }[tipo]
+            const nome = { Entrada: 'ENTRADAS', Saída: 'SAÍDAS' }[tipo]
             return [
               <tr key={tipo + 'h'} className={`sec ${tipo}`}><td colSpan={meses.length + 2}>{nome}</td></tr>,
               ...g.linhas.map((l) => (

@@ -5,7 +5,7 @@ import { useDados } from '../context/DadosContext'
 import { useAuth } from '../context/AuthContext'
 import { Modal, Alerta, Carregando, Kpi, CORES } from '../components/ui'
 import { brl, num, dataBR, dataHoraBR, hojeISO, inicioMesISO, fimMesISO, somarMeses, lerValor, TIPOS, chaveMes, rotuloMes } from '../lib/format'
-import { comSaldo, totais, valorMensalidade, pagoPorMes } from '../lib/relatorios'
+import { comSaldo, totais, valorMensalidade, pagoPorMes, tipoDe } from '../lib/relatorios'
 
 const PERIODOS = {
   mes: 'Este mês',
@@ -59,7 +59,7 @@ export default function Lancamentos() {
     const b = busca.trim().toLowerCase()
     return todosComSaldo
       .filter((l) => (!de || l.data >= de) && (!ate || l.data <= ate))
-      .filter((l) => !tipo || l.tipo === tipo)
+      .filter((l) => !tipo || tipoDe(l) === tipo)
       .filter((l) => !categoria || String(l.categoria_id) === categoria)
       .filter((l) => !b || [l.descricao, l.categoria?.nome, l.forma?.nome, l.observacao, l.autor?.nome, l.casal?.nome].join(' ').toLowerCase().includes(b))
       .reverse() // mais recentes primeiro
@@ -78,7 +78,7 @@ export default function Lancamentos() {
   function exportarCSV() {
     const linhas = [['Data', 'Tipo', 'Categoria', 'Descrição', 'Forma de pagamento', 'Valor', 'Saldo', 'Casal', 'Mês ref.', 'Observação', 'Lançado por']]
     for (const l of [...filtrados].reverse())
-      linhas.push([dataBR(l.data), l.tipo, l.categoria?.nome || '', l.descricao, l.forma?.nome || '', num(l.valor), num(l.saldo), l.casal?.nome || '', l.competencia ? rotuloMes(chaveMes(l.competencia)) : '', l.observacao || '', l.autor?.nome || ''])
+      linhas.push([dataBR(l.data), tipoDe(l), l.categoria?.nome || '', l.descricao, l.forma?.nome || '', num(l.valor), num(l.saldo), l.casal?.nome || '', l.competencia ? rotuloMes(chaveMes(l.competencia)) : '', l.observacao || '', l.autor?.nome || ''])
     const csv = linhas.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n')
     const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a')
@@ -95,7 +95,7 @@ export default function Lancamentos() {
       <div className="cabecalho">
         <div>
           <h1>Lançamentos</h1>
-          <p className="muted">Entradas, saídas e retiradas do caixa</p>
+          <p className="muted">Entradas e saídas do caixa</p>
         </div>
         <div className="acoes">
           <button onClick={exportarCSV} disabled={!filtrados.length}>⬇ Exportar Excel (CSV)</button>
@@ -144,7 +144,6 @@ export default function Lancamentos() {
       <div className="grade grade-kpi" style={{ margin: '16px 0' }}>
         <Kpi rotulo="Entradas" valor={brl(t.entradas)} cor={CORES.verde} />
         <Kpi rotulo="Saídas" valor={brl(t.saidas)} cor={CORES.vermelho} />
-        <Kpi rotulo="Retiradas" valor={brl(t.retiradas)} cor={CORES.roxo} />
         <Kpi rotulo="Resultado" valor={brl(t.resultado)} cor={t.resultado < 0 ? CORES.vermelho : CORES.azul} sub={`${t.qtd} lançamento(s)`} />
       </div>
 
@@ -165,7 +164,7 @@ export default function Lancamentos() {
             {filtrados.map((l) => (
               <tr key={l.id}>
                 <td className="nowrap">{dataBR(l.data)}</td>
-                <td><span className={`tag ${l.tipo}`}>{l.tipo}</span></td>
+                <td><span className={`tag ${tipoDe(l)}`}>{tipoDe(l)}</span></td>
                 <td>{l.categoria?.nome}</td>
                 <td>
                   {l.descricao}
@@ -212,7 +211,7 @@ function FormLancamento({ inicial, categorias, formas, casais, valoresMensalidad
   const novo = !inicial.id
   const [f, setF] = useState({
     data: inicial.data || hojeISO(),
-    tipo: inicial.tipo || 'Saída',
+    tipo: inicial.tipo === 'Entrada' ? 'Entrada' : 'Saída',
     categoria_id: inicial.categoria_id ? String(inicial.categoria_id) : '',
     forma_id: inicial.forma_id ? String(inicial.forma_id) : '',
     descricao: inicial.descricao || '',
